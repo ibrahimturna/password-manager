@@ -1,6 +1,10 @@
-import type { Category } from "@/types/vault";
+import type { Category, Credential } from "@/types/vault";
 
-import { getChildCategories } from "./category-tree";
+import {
+  getCategoryById,
+  getChildCategories,
+  getCredentialsInCategory,
+} from "./category-tree";
 
 // Small, hand-made tree used only by these tests:
 //
@@ -62,5 +66,60 @@ describe("getChildCategories", () => {
 
   it("returns an empty list when there are no categories at all", () => {
     expect(getChildCategories([], null)).toEqual([]);
+  });
+});
+
+describe("getCategoryById", () => {
+  it("finds a top-level category", () => {
+    expect(getCategoryById(testCategories, "banks")?.name).toBe("Banks");
+  });
+
+  it("finds a deeply nested category", () => {
+    expect(getCategoryById(testCategories, "stocks")?.name).toBe("Stocks");
+  });
+
+  it("returns undefined for an id that does not exist", () => {
+    expect(getCategoryById(testCategories, "no-such-id")).toBeUndefined();
+  });
+});
+
+describe("getCredentialsInCategory", () => {
+  // Builds a credential with only the fields these tests care about.
+  function makeCredential(id: string, categoryId: string): Credential {
+    return {
+      id,
+      categoryId,
+      title: id,
+      username: null,
+      password: "fake-password",
+      createdAt: 0,
+      updatedAt: 0,
+    };
+  }
+
+  const testCredentials: Credential[] = [
+    makeCredential("bank-login", "banks"),
+    makeCredential("broker-login", "stocks"),
+    makeCredential("second-bank-login", "banks"),
+  ];
+
+  it("returns all credentials stored directly in the category", () => {
+    const result = getCredentialsInCategory(testCredentials, "banks");
+
+    expect(result.map((credential) => credential.id)).toEqual([
+      "bank-login",
+      "second-bank-login",
+    ]);
+  });
+
+  it("does not include credentials from subcategories", () => {
+    // "broker-login" lives in "stocks", which is inside "banks" › "investments".
+    const result = getCredentialsInCategory(testCredentials, "banks");
+
+    expect(result.map((credential) => credential.id)).not.toContain("broker-login");
+  });
+
+  it("returns an empty list for a category without credentials", () => {
+    expect(getCredentialsInCategory(testCredentials, "empty")).toEqual([]);
   });
 });

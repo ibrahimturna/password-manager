@@ -1,11 +1,6 @@
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { mockCategories } from "@/data/mock-vault";
-
-// Top-level categories are the ones without a parent.
-const rootCategories = mockCategories.filter(
-  (category) => category.parentId === null,
-);
+import { CategoryContents } from "@/features/categories/category-contents";
 
 export default function HomeScreen() {
   return (
@@ -14,15 +9,7 @@ export default function HomeScreen() {
         Mock data only — do not enter real passwords.
       </Text>
 
-      <FlatList
-        data={rootCategories}
-        keyExtractor={(category) => category.id}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.rowText}>{item.name}</Text>
-          </View>
-        )}
-      />
+      <CategoryContents categoryId={null} />
     </View>
   );
 }
@@ -36,13 +23,5 @@ const styles = StyleSheet.create({
   notice: {
     textAlign: "center",
     color: "#666",
-  },
-  row: {
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
-  },
-  rowText: {
-    fontSize: 18,
   },
 });
