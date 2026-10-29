@@ -4,6 +4,10 @@ import {
   getCategoryById,
   getChildCategories,
   getCredentialsInCategory,
+  getDescendantIds,
+  getVisibleRows,
+  toggleExpanded,
+  type TreeRow,
 } from "./category-tree";
 
 // Small, hand-made tree used only by these tests:
@@ -23,6 +27,25 @@ const testCategories: Category[] = [
   { id: "social", name: "Social", parentId: null },
   { id: "social-other", name: "Other", parentId: "social" },
   { id: "empty", name: "Empty", parentId: null },
+];
+
+// Builds a credential with only the fields these tests care about.
+function makeCredential(id: string, categoryId: string): Credential {
+  return {
+    id,
+    categoryId,
+    title: id,
+    username: null,
+    password: "fake-password",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+}
+
+const testCredentials: Credential[] = [
+  makeCredential("bank-login", "banks"),
+  makeCredential("broker-login", "stocks"),
+  makeCredential("second-bank-login", "banks"),
 ];
 
 // Helper: compare by id so failures print short, readable lists.
@@ -84,25 +107,6 @@ describe("getCategoryById", () => {
 });
 
 describe("getCredentialsInCategory", () => {
-  // Builds a credential with only the fields these tests care about.
-  function makeCredential(id: string, categoryId: string): Credential {
-    return {
-      id,
-      categoryId,
-      title: id,
-      username: null,
-      password: "fake-password",
-      createdAt: 0,
-      updatedAt: 0,
-    };
-  }
-
-  const testCredentials: Credential[] = [
-    makeCredential("bank-login", "banks"),
-    makeCredential("broker-login", "stocks"),
-    makeCredential("second-bank-login", "banks"),
-  ];
-
   it("returns all credentials stored directly in the category", () => {
     const result = getCredentialsInCategory(testCredentials, "banks");
 
@@ -121,5 +125,136 @@ describe("getCredentialsInCategory", () => {
 
   it("returns an empty list for a category without credentials", () => {
     expect(getCredentialsInCategory(testCredentials, "empty")).toEqual([]);
+  });
+});
+
+describe("getVisibleRows", () => {
+  // Turns rows into short, indented strings so expectations read like the tree itself:
+  // "[+]" = collapsed category, "[-]" = expanded category, "*" = credential.
+  function describeRows(rows: TreeRow[]): string[] {
+    return rows.map((row) => {
+      const indent = "  ".repeat(row.depth);
+      switch (row.kind) {
+        case "category":
+          return `${indent}${row.isExpanded ? "[-]" : "[+]"} ${row.category.name}`;
+        case "credential":
+          return `${indent}* ${row.credential.title}`;
+        case "empty":
+          return `${indent}(empty)`;
+      }
+    });
+  }
+
+  function visibleRows(expandedIds: string[]): string[] {
+    return describeRows(getVisibleRows(testCategories, testCredentials, new Set(expandedIds)));
+  }
+
+  it("shows only top-level categories when nothing is expanded", () => {
+    expect(visibleRows([])).toEqual(["[+] Banks", "[+] Social", "[+] Empty"]);
+  });
+
+  it("shows subcategories first, then credentials, inside an expanded category", () => {
+    expect(visibleRows(["banks"])).toEqual([
+      "[-] Banks",
+      "  [+] Investments",
+      "  [+] Other",
+      "  * bank-login",
+      "  * second-bank-login",
+      "[+] Social",
+      "[+] Empty",
+    ]);
+  });
+
+  it("shows deeply nested contents when every level is expanded", () => {
+    expect(visibleRows(["banks", "investments", "stocks"])).toEqual([
+      "[-] Banks",
+      "  [-] Investments",
+      "    [-] Stocks",
+      "      * broker-login",
+      "  [+] Other",
+      "  * bank-login",
+      "  * second-bank-login",
+      "[+] Social",
+      "[+] Empty",
+    ]);
+  });
+
+  it("hides an expanded category when its parent is collapsed", () => {
+    // "investments" is expanded, but its parent "banks" is not, so it stays hidden.
+    expect(visibleRows(["investments"])).toEqual(["[+] Banks", "[+] Social", "[+] Empty"]);
+  });
+
+  it("shows an empty marker inside an expanded category with no contents", () => {
+    expect(visibleRows(["empty"])).toEqual([
+      "[+] Banks",
+      "[+] Social",
+      "[-] Empty",
+      "  (empty)",
+    ]);
+  });
+
+  it("ignores expanded ids that do not exist", () => {
+    expect(visibleRows(["no-such-id"])).toEqual(["[+] Banks", "[+] Social", "[+] Empty"]);
+  });
+
+  it("returns no rows when there are no categories", () => {
+    expect(getVisibleRows([], [], new Set())).toEqual([]);
+  });
+});
+
+describe("getDescendantIds", () => {
+  it("returns children and grandchildren at every depth", () => {
+    expect(getDescendantIds(testCategories, "banks")).toEqual([
+      "investments",
+      "stocks",
+      "banks-other",
+    ]);
+  });
+
+  it("returns an empty list for a category without children", () => {
+    expect(getDescendantIds(testCategories, "stocks")).toEqual([]);
+  });
+
+  it("does not loop forever when categories point at each other", () => {
+    const loopingCategories: Category[] = [
+      { id: "a", name: "A", parentId: "b" },
+      { id: "b", name: "B", parentId: "a" },
+    ];
+
+    expect(getDescendantIds(loopingCategories, "a")).toEqual(["b"]);
+  });
+});
+
+describe("toggleExpanded", () => {
+  it("opens a closed category", () => {
+    const result = toggleExpanded(new Set(), "banks", testCategories);
+
+    expect([...result]).toEqual(["banks"]);
+  });
+
+  it("closes an open category", () => {
+    const result = toggleExpanded(new Set(["banks", "social"]), "banks", testCategories);
+
+    expect([...result]).toEqual(["social"]);
+  });
+
+  it("also closes every open category inside the one being closed", () => {
+    const result = toggleExpanded(
+      new Set(["banks", "investments", "stocks", "social"]),
+      "banks",
+      testCategories,
+    );
+
+    // "social" is in a different branch, so it stays open.
+    expect([...result]).toEqual(["social"]);
+  });
+
+  it("does not change the Set it was given", () => {
+    const original = new Set(["banks"]);
+
+    const result = toggleExpanded(original, "banks", testCategories);
+
+    expect(result).not.toBe(original); // a different object…
+    expect([...original]).toEqual(["banks"]); // …and the original is untouched
   });
 });
