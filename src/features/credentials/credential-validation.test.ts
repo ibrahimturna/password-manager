@@ -8,7 +8,7 @@ import {
 
 // A valid input; each test changes only the field it cares about.
 const validInput: CredentialInput = {
-  categoryId: "banks",
+  folderId: "banks",
   title: "Bank",
   username: "demo_user",
   password: "fake-password",
@@ -18,7 +18,7 @@ describe("validateCredential", () => {
   it("accepts a valid credential", () => {
     expect(validateCredential(validInput)).toEqual({
       ok: true,
-      value: { categoryId: "banks", title: "Bank", username: "demo_user", password: "fake-password" },
+      value: { folderId: "banks", title: "Bank", username: "demo_user", password: "fake-password" },
     });
   });
 

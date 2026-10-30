@@ -15,9 +15,9 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Icon } from "@/components/icon";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
-import { CategoryPickerRow, getCategoryPickerRows } from "@/features/categories/category-picker";
-import { getCategoryById, getCategoryPath } from "@/features/categories/category-tree";
-import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
+import { FolderPickerRow, getFolderPickerRows } from "@/features/folders/folder-picker";
+import { getFolderById, getFolderPath } from "@/features/folders/folder-tree";
+import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
 import { copyPassword } from "@/features/credentials/copy-password";
 import {
   type CredentialFieldErrors,
@@ -33,59 +33,59 @@ import { useTheme } from "@/theme/use-theme";
 
 // How long the copy button shows a check mark after copying.
 const COPIED_FEEDBACK_MS = 2000;
-// How long a short message (e.g. "Choose a category before saving.") stays visible.
+// How long a short message (e.g. "Choose a folder before saving.") stays visible.
 const NOTICE_MS = 3000;
 
 // Creates a credential or edits one.
-// Opened with `credentialId` to edit, with `categoryId` to create inside a category,
-// or with no params (from the "+" menu) to create and pick a category.
+// Opened with `credentialId` to edit, with `folderId` to create inside a folder,
+// or with no params (from the "+" menu) to create and pick a folder.
 export default function CredentialFormScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ credentialId?: string; categoryId?: string }>();
+  const params = useLocalSearchParams<{ credentialId?: string; folderId?: string }>();
   const {
-    categories,
+    folders,
     credentials,
     createCredential,
     updateCredential,
     deleteCredential,
     restoreCredentials,
   } = useVault();
-  const { expandWithParents } = useExpandedCategories();
+  const { expandWithParents } = useExpandedFolders();
   const { offerUndo } = useUndo();
 
   // The params only set the starting values. Unknown ids fall back to "new credential".
   const existing = credentials.find((credential) => credential.id === params.credentialId);
-  const startCategoryId =
-    existing?.categoryId ??
-    (params.categoryId !== undefined && getCategoryById(categories, params.categoryId)
-      ? params.categoryId
+  const startFolderId =
+    existing?.folderId ??
+    (params.folderId !== undefined && getFolderById(folders, params.folderId)
+      ? params.folderId
       : null);
 
   const [title, setTitle] = useState(existing?.title ?? "");
   const [username, setUsername] = useState(existing?.username ?? "");
   const [password, setPassword] = useState(existing?.password ?? "");
-  const [categoryId, setCategoryId] = useState<string | null>(startCategoryId);
+  const [folderId, setFolderId] = useState<string | null>(startFolderId);
   // Always starts hidden; the eye button shows it while editing.
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errors, setErrors] = useState<CredentialFieldErrors>({});
   const [isCopied, setIsCopied] = useState(false);
-  // True after Save was tapped without a category: the category hint turns red.
-  const [isCategoryMissing, setIsCategoryMissing] = useState(false);
+  // True after Save was tapped without a folder: the folder hint turns red.
+  const [isFolderMissing, setIsFolderMissing] = useState(false);
   // A short message at the bottom of the screen, or null.
   const [notice, setNotice] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const pickerRows = getCategoryPickerRows(categories);
-  const categoryPath =
-    categoryId === null
+  const pickerRows = getFolderPickerRows(folders);
+  const folderPath =
+    folderId === null
       ? null
-      : getCategoryPath(categories, categoryId)
-          .map((category) => category.name)
+      : getFolderPath(folders, folderId)
+          .map((folder) => folder.name)
           .join(" › ");
-  const canSave = categoryId !== null;
+  const canSave = folderId !== null;
 
   // Turns the check mark on the copy button back into the copy icon after a moment.
   useEffect(() => {
@@ -107,28 +107,28 @@ export default function CredentialFormScreen() {
     AccessibilityInfo.announceForAccessibility(t.credentialForm.copied);
   }
 
-  function selectCategory(id: string) {
-    setCategoryId(id);
-    setIsCategoryMissing(false);
+  function selectFolder(id: string) {
+    setFolderId(id);
+    setIsFolderMissing(false);
     setNotice(null);
   }
 
   function save() {
-    // Save looks disabled without a category, but still reacts, so it can say what is missing.
-    if (categoryId === null) {
-      setIsCategoryMissing(true);
-      setNotice(t.credentialForm.categoryRequired);
+    // Save looks disabled without a folder, but still reacts, so it can say what is missing.
+    if (folderId === null) {
+      setIsFolderMissing(true);
+      setNotice(t.credentialForm.folderRequired);
       return;
     }
-    const input = { categoryId, title, username, password };
+    const input = { folderId, title, username, password };
     const result =
       existing === undefined ? createCredential(input) : updateCredential(existing.id, input);
     if (!result.ok) {
       setErrors(result.errors);
       return;
     }
-    // Open the category (and the ones above it) so the saved credential is visible.
-    expandWithParents(categoryId);
+    // Open the folder (and the ones above it) so the saved credential is visible.
+    expandWithParents(folderId);
     router.back();
   }
 
@@ -249,13 +249,13 @@ export default function CredentialFormScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>{t.credentialForm.category}</Text>
-      {categoryPath === null ? (
-        <Text style={[styles.categoryHint, isCategoryMissing && styles.categoryHintMissing]}>
-          {t.credentialForm.chooseCategoryHint}
+      <Text style={styles.sectionTitle}>{t.credentialForm.folder}</Text>
+      {folderPath === null ? (
+        <Text style={[styles.folderHint, isFolderMissing && styles.folderHintMissing]}>
+          {t.credentialForm.chooseFolderHint}
         </Text>
       ) : (
-        <Text style={styles.selection}>{categoryPath}</Text>
+        <Text style={styles.selection}>{folderPath}</Text>
       )}
     </View>
   );
@@ -283,18 +283,18 @@ export default function CredentialFormScreen() {
 
       <FlatList
         data={pickerRows}
-        keyExtractor={(row) => row.category.id}
+        keyExtractor={(row) => row.folder.id}
         ListHeaderComponent={header}
         // Lets a tap on a list row work while the keyboard is open.
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
         renderItem={({ item }) => (
-          <CategoryPickerRow
+          <FolderPickerRow
             icon="folder"
-            label={item.category.name}
+            label={item.folder.name}
             depth={item.depth}
-            isSelected={categoryId === item.category.id}
-            onPress={() => selectCategory(item.category.id)}
+            isSelected={folderId === item.folder.id}
+            onPress={() => selectFolder(item.folder.id)}
           />
         )}
       />
@@ -349,13 +349,13 @@ function createStyles(colors: Palette) {
       fontWeight: "600",
       color: colors.onSurface,
     },
-    // Bold and coloured, so a missing category is hard to overlook.
-    categoryHint: {
+    // Bold and coloured, so a missing folder is hard to overlook.
+    folderHint: {
       fontSize: 16,
       fontWeight: "600",
       color: colors.primary,
     },
-    categoryHintMissing: {
+    folderHintMissing: {
       color: colors.error,
     },
     form: {

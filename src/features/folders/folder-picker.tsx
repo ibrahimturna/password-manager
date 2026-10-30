@@ -3,22 +3,22 @@ import { Pressable, StyleSheet, Text } from "react-native";
 import { Icon, type IconName } from "@/components/icon";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
-import type { Category } from "@/types/vault";
+import type { Folder } from "@/types/vault";
 
-import { getVisibleRows } from "./category-tree";
+import { getVisibleRows } from "./folder-tree";
 
 const INDENT_PER_LEVEL = 20;
 
-// Every category in tree order, with its depth for indentation, for a list to pick from.
-// Reuses getVisibleRows by treating every category as expanded and passing no credentials.
-export function getCategoryPickerRows(categories: Category[]) {
-  const allCategoryIds = new Set(categories.map((category) => category.id));
-  return getVisibleRows(categories, [], allCategoryIds).flatMap((row) =>
-    row.kind === "category" ? [row] : [],
+// Every folder in tree order, with its depth for indentation, for a list to pick from.
+// Reuses getVisibleRows by treating every folder as expanded and passing no credentials.
+export function getFolderPickerRows(folders: Folder[]) {
+  const allFolderIds = new Set(folders.map((folder) => folder.id));
+  return getVisibleRows(folders, [], allFolderIds).flatMap((row) =>
+    row.kind === "folder" ? [row] : [],
   );
 }
 
-type CategoryPickerRowProps = {
+type FolderPickerRowProps = {
   icon: IconName;
   label: string;
   depth: number;
@@ -26,8 +26,8 @@ type CategoryPickerRowProps = {
   onPress: () => void;
 };
 
-// One choice in a category list. Used by the category form and the credential form.
-export function CategoryPickerRow({ icon, label, depth, isSelected, onPress }: CategoryPickerRowProps) {
+// One choice in a folder list. Used by the folder form and the credential form.
+export function FolderPickerRow({ icon, label, depth, isSelected, onPress }: FolderPickerRowProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const contentColor = isSelected ? colors.onPrimaryContainer : colors.onSurfaceVariant;

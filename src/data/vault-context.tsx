@@ -1,27 +1,27 @@
 import { randomUUID } from "expo-crypto";
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-import { mockCategories, mockCredentials } from "@/data/mock-vault";
-import type { CategoryDeletion } from "@/features/categories/category-mutations";
+import { mockFolders, mockCredentials } from "@/data/mock-vault";
+import type { FolderDeletion } from "@/features/folders/folder-mutations";
 import type { CredentialInput } from "@/features/credentials/credential-validation";
-import type { Category, Credential } from "@/types/vault";
+import type { Credential, Folder } from "@/types/vault";
 
 import {
   createInMemoryVaultRepository,
-  type CreateCategoryResult,
+  type CreateFolderResult,
   type CredentialDeletion,
-  type RenameCategoryResult,
+  type RenameFolderResult,
   type SaveCredentialResult,
 } from "./vault-repository";
 
 // What every screen inside <VaultProvider> can read and call.
 type VaultContextValue = {
-  categories: Category[];
+  folders: Folder[];
   credentials: Credential[];
-  createCategory: (name: string, parentId: string | null) => CreateCategoryResult;
-  renameCategory: (id: string, name: string) => RenameCategoryResult;
-  deleteCategory: (id: string) => CategoryDeletion;
-  restoreDeletion: (deletion: CategoryDeletion) => void;
+  createFolder: (name: string, parentId: string | null) => CreateFolderResult;
+  renameFolder: (id: string, name: string) => RenameFolderResult;
+  deleteFolder: (id: string) => FolderDeletion;
+  restoreDeletion: (deletion: FolderDeletion) => void;
   createCredential: (input: CredentialInput) => SaveCredentialResult;
   updateCredential: (id: string, input: CredentialInput) => SaveCredentialResult;
   deleteCredential: (id: string) => CredentialDeletion;
@@ -35,41 +35,41 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   // Passing a function to useState runs it only once, so the repository is created once.
   const [repository] = useState(() =>
     createInMemoryVaultRepository(
-      { categories: mockCategories, credentials: mockCredentials },
+      { folders: mockFolders, credentials: mockCredentials },
       randomUUID,
       Date.now,
     ),
   );
 
   // A copy of the repository's data in React state. Updating it makes the screens re-render.
-  const [categories, setCategories] = useState(() => repository.getCategories());
+  const [folders, setFolders] = useState(() => repository.getFolders());
   const [credentials, setCredentials] = useState(() => repository.getCredentials());
 
   // Both functions return the repository's result, so the screen can show a validation error.
-  // A rejected name changes nothing, but setCategories then gets the same array and React skips the re-render.
-  function createCategory(name: string, parentId: string | null): CreateCategoryResult {
-    const result = repository.createCategory(name, parentId);
-    setCategories(repository.getCategories());
+  // A rejected name changes nothing, but setFolders then gets the same array and React skips the re-render.
+  function createFolder(name: string, parentId: string | null): CreateFolderResult {
+    const result = repository.createFolder(name, parentId);
+    setFolders(repository.getFolders());
     return result;
   }
 
-  function renameCategory(id: string, name: string): RenameCategoryResult {
-    const result = repository.renameCategory(id, name);
-    setCategories(repository.getCategories());
+  function renameFolder(id: string, name: string): RenameFolderResult {
+    const result = repository.renameFolder(id, name);
+    setFolders(repository.getFolders());
     return result;
   }
 
   // Deleting and restoring change credentials too, so both copies are refreshed.
-  function deleteCategory(id: string): CategoryDeletion {
-    const deletion = repository.deleteCategory(id);
-    setCategories(repository.getCategories());
+  function deleteFolder(id: string): FolderDeletion {
+    const deletion = repository.deleteFolder(id);
+    setFolders(repository.getFolders());
     setCredentials(repository.getCredentials());
     return deletion;
   }
 
-  function restoreDeletion(deletion: CategoryDeletion) {
+  function restoreDeletion(deletion: FolderDeletion) {
     repository.restoreDeletion(deletion);
-    setCategories(repository.getCategories());
+    setFolders(repository.getFolders());
     setCredentials(repository.getCredentials());
   }
 
@@ -100,11 +100,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   return (
     <VaultContext
       value={{
-        categories,
+        folders,
         credentials,
-        createCategory,
-        renameCategory,
-        deleteCategory,
+        createFolder,
+        renameFolder,
+        deleteFolder,
         restoreDeletion,
         createCredential,
         updateCredential,

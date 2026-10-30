@@ -5,94 +5,94 @@ import { useVault } from "@/data/vault-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
-import type { Category, Credential } from "@/types/vault";
+import type { Credential, Folder } from "@/types/vault";
 
-import { getVisibleRows, type TreeRow } from "./category-tree";
+import { getVisibleRows, type TreeRow } from "./folder-tree";
 
 const INDENT_PER_LEVEL = 20;
 // Space below the last row, so the round "+" button does not cover it.
 const BOTTOM_SPACE_FOR_BUTTON = 88;
 
-type CategoryTreeListProps = {
+type FolderTreeListProps = {
   expandedIds: ReadonlySet<string>;
-  // The category whose "⋮" actions are open (only one at a time), or null.
-  menuCategoryId: string | null;
+  // The folder whose "⋮" actions are open (only one at a time), or null.
+  menuFolderId: string | null;
   // The credential whose password was just copied (its copy icon shows a check), or null.
   copiedCredentialId: string | null;
-  onToggleCategory: (categoryId: string) => void;
-  onToggleMenu: (categoryId: string) => void;
+  onToggleFolder: (folderId: string) => void;
+  onToggleMenu: (folderId: string) => void;
   onCloseMenu: () => void;
-  onAddPassword: (categoryId: string) => void;
-  onAddSubcategory: (parentId: string) => void;
-  onRenameCategory: (categoryId: string) => void;
-  onDeleteCategory: (categoryId: string) => void;
+  onAddPassword: (folderId: string) => void;
+  onAddSubfolder: (parentId: string) => void;
+  onRenameFolder: (folderId: string) => void;
+  onDeleteFolder: (folderId: string) => void;
   onOpenCredential: (credentialId: string) => void;
   onCopyCredential: (credentialId: string) => void;
 };
 
-// Shows the whole vault as an expandable tree. Tapping a category expands or collapses it;
+// Shows the whole vault as an expandable tree. Tapping a folder expands or collapses it;
 // its "⋮" button opens a small list of actions under the row. Tapping a credential opens it;
 // long-pressing it, or its copy button, copies its password.
 // This component does not own any state; the screen passes it in.
-export function CategoryTreeList({
+export function FolderTreeList({
   expandedIds,
-  menuCategoryId,
+  menuFolderId,
   copiedCredentialId,
-  onToggleCategory,
+  onToggleFolder,
   onToggleMenu,
   onCloseMenu,
   onAddPassword,
-  onAddSubcategory,
-  onRenameCategory,
-  onDeleteCategory,
+  onAddSubfolder,
+  onRenameFolder,
+  onDeleteFolder,
   onOpenCredential,
   onCopyCredential,
-}: CategoryTreeListProps) {
+}: FolderTreeListProps) {
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
-  const { categories, credentials } = useVault();
-  const rows = getVisibleRows(categories, credentials, expandedIds);
+  const { folders, credentials } = useVault();
+  const rows = getVisibleRows(folders, credentials, expandedIds);
 
   return (
     <FlatList
       data={rows}
       // FlatList only redraws rows when `data` changes. The open menu and the copied check mark
       // are not part of `data`, so `extraData` tells FlatList to redraw when they change too.
-      extraData={[menuCategoryId, copiedCredentialId]}
+      extraData={[menuFolderId, copiedCredentialId]}
       keyExtractor={getRowKey}
       contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
       // Scrolling counts as "doing something else", so it closes an open menu.
       onScrollBeginDrag={onCloseMenu}
       renderItem={({ item }) => {
         switch (item.kind) {
-          case "category": {
-            const categoryId = item.category.id;
+          case "folder": {
+            const folderId = item.folder.id;
             return (
-              <CategoryRow
-                category={item.category}
+              <FolderRow
+                folder={item.folder}
                 depth={item.depth}
                 isExpanded={item.isExpanded}
-                isMenuOpen={menuCategoryId === categoryId}
+                isMenuOpen={menuFolderId === folderId}
                 onPress={() => {
                   onCloseMenu();
-                  onToggleCategory(categoryId);
+                  onToggleFolder(folderId);
                 }}
-                onPressMenu={() => onToggleMenu(categoryId)}
+                onPressMenu={() => onToggleMenu(folderId)}
                 onAddPassword={() => {
                   onCloseMenu();
-                  onAddPassword(categoryId);
+                  onAddPassword(folderId);
                 }}
-                onAddSubcategory={() => {
+                onAddSubfolder={() => {
                   onCloseMenu();
-                  onAddSubcategory(categoryId);
+                  onAddSubfolder(folderId);
                 }}
                 onRename={() => {
                   onCloseMenu();
-                  onRenameCategory(categoryId);
+                  onRenameFolder(folderId);
                 }}
                 onDelete={() => {
                   onCloseMenu();
-                  onDeleteCategory(categoryId);
+                  onDeleteFolder(folderId);
                 }}
               />
             );
@@ -122,15 +122,15 @@ export function CategoryTreeList({
             return <ReadOnlyTreeRow row={item} />;
         }
       }}
-      ListEmptyComponent={<Text style={styles.emptyText}>{t.tree.noCategories}</Text>}
+      ListEmptyComponent={<Text style={styles.emptyText}>{t.tree.noFolders}</Text>}
     />
   );
 }
 
 export function getRowKey(row: TreeRow): string {
   switch (row.kind) {
-    case "category":
-      return `category-${row.category.id}`;
+    case "folder":
+      return `folder-${row.folder.id}`;
     case "credential":
       return `credential-${row.credential.id}`;
     case "empty":
@@ -138,31 +138,31 @@ export function getRowKey(row: TreeRow): string {
   }
 }
 
-type CategoryRowProps = {
-  category: Category;
+type FolderRowProps = {
+  folder: Folder;
   depth: number;
   isExpanded: boolean;
   isMenuOpen: boolean;
   onPress: () => void;
   onPressMenu: () => void;
   onAddPassword: () => void;
-  onAddSubcategory: () => void;
+  onAddSubfolder: () => void;
   onRename: () => void;
   onDelete: () => void;
 };
 
-function CategoryRow({
-  category,
+function FolderRow({
+  folder,
   depth,
   isExpanded,
   isMenuOpen,
   onPress,
   onPressMenu,
   onAddPassword,
-  onAddSubcategory,
+  onAddSubfolder,
   onRename,
   onDelete,
-}: CategoryRowProps) {
+}: FolderRowProps) {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -170,21 +170,21 @@ function CategoryRow({
 
   return (
     <View style={styles.row}>
-      <View style={styles.categoryLine}>
+      <View style={styles.folderLine}>
         <Pressable
           onPress={onPress}
-          style={[styles.categoryName, indent]}
+          style={[styles.folderName, indent]}
           accessibilityRole="button"
           accessibilityState={{ expanded: isExpanded }}
         >
-          <CategoryLabel category={category} isExpanded={isExpanded} />
+          <FolderLabel folder={folder} isExpanded={isExpanded} />
         </Pressable>
         <Pressable
           onPress={onPressMenu}
           hitSlop={8}
           style={styles.menuButton}
           accessibilityRole="button"
-          accessibilityLabel={t.tree.actionsFor(category.name)}
+          accessibilityLabel={t.tree.actionsFor(folder.name)}
           accessibilityState={{ expanded: isMenuOpen }}
         >
           <Icon name="moreActions" color={colors.onSurfaceVariant} />
@@ -194,7 +194,7 @@ function CategoryRow({
       {isMenuOpen && (
         <View style={[styles.menu, indent]}>
           <MenuAction icon="newPassword" label={t.tree.addPassword} onPress={onAddPassword} />
-          <MenuAction icon="newFolder" label={t.tree.addSubcategory} onPress={onAddSubcategory} />
+          <MenuAction icon="newFolder" label={t.tree.addSubfolder} onPress={onAddSubfolder} />
           <MenuAction icon="edit" label={t.tree.rename} onPress={onRename} />
           <MenuAction icon="delete" label={t.tree.delete} onPress={onDelete} isDestructive />
         </View>
@@ -203,9 +203,9 @@ function CategoryRow({
   );
 }
 
-// The arrow, folder icon and name of a category row.
+// The arrow, folder icon and name of a folder row.
 // Shared by the tappable tree and the read-only preview, so both look the same.
-function CategoryLabel({ category, isExpanded }: { category: Category; isExpanded: boolean }) {
+function FolderLabel({ folder, isExpanded }: { folder: Folder; isExpanded: boolean }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -217,7 +217,7 @@ function CategoryLabel({ category, isExpanded }: { category: Category; isExpande
         size={20}
       />
       <Icon name={isExpanded ? "folderOpen" : "folder"} color={colors.primary} />
-      <Text style={styles.rowTitle}>{category.name}</Text>
+      <Text style={styles.rowTitle}>{folder.name}</Text>
     </>
   );
 }
@@ -229,10 +229,10 @@ export function ReadOnlyTreeRow({ row }: { row: TreeRow }) {
   const indent = { paddingLeft: row.depth * INDENT_PER_LEVEL };
 
   switch (row.kind) {
-    case "category":
+    case "folder":
       return (
-        <View style={[styles.row, styles.categoryName, indent]}>
-          <CategoryLabel category={row.category} isExpanded={row.isExpanded} />
+        <View style={[styles.row, styles.folderName, indent]}>
+          <FolderLabel folder={row.folder} isExpanded={row.isExpanded} />
         </View>
       );
     case "credential":
@@ -301,7 +301,7 @@ function CredentialRow({
   }
 
   return (
-    <View style={[styles.row, styles.categoryLine]}>
+    <View style={[styles.row, styles.folderLine]}>
       <Pressable
         onPress={actions.onPress}
         onLongPress={actions.onCopy}
@@ -329,11 +329,11 @@ function createStyles(colors: Palette) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.outlineVariant,
     },
-    categoryLine: {
+    folderLine: {
       flexDirection: "row",
       alignItems: "center",
     },
-    categoryName: {
+    folderName: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",

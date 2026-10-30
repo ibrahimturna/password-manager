@@ -4,7 +4,7 @@ export const MAX_PASSWORD_LENGTH = 256;
 
 // What the user typed in the credential form.
 export type CredentialInput = {
-  categoryId: string;
+  folderId: string;
   title: string;
   username: string;
   password: string;
@@ -12,7 +12,7 @@ export type CredentialInput = {
 
 // The cleaned-up values to store.
 export type ValidCredential = {
-  categoryId: string;
+  folderId: string;
   title: string;
   username: string | null; // empty becomes null: "no username"
   password: string;
@@ -66,7 +66,7 @@ export function validateCredential(input: CredentialInput): CredentialValidation
   return {
     ok: true,
     value: {
-      categoryId: input.categoryId,
+      folderId: input.folderId,
       title,
       username: username === "" ? null : username,
       password,

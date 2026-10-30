@@ -4,7 +4,7 @@ import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
 
 import { VaultProvider } from "@/data/vault-context";
-import { ExpandedCategoriesProvider } from "@/features/categories/expanded-categories-context";
+import { ExpandedFoldersProvider } from "@/features/folders/expanded-folders-context";
 import { SettingsButton } from "@/features/settings/settings-button";
 import { SettingsProvider } from "@/features/settings/settings-context";
 import { UndoProvider } from "@/features/undo/undo-context";
@@ -17,11 +17,11 @@ export default function RootLayout() {
     // tree state and pending Undo.
     <SettingsProvider>
       <VaultProvider>
-        <ExpandedCategoriesProvider>
+        <ExpandedFoldersProvider>
           <UndoProvider>
             <AppStack />
           </UndoProvider>
-        </ExpandedCategoriesProvider>
+        </ExpandedFoldersProvider>
       </VaultProvider>
     </SettingsProvider>
   );
@@ -66,8 +66,8 @@ function AppStack() {
           options={{ title: t.app.title, headerRight: () => <SettingsButton /> }}
         />
         <Stack.Screen
-          name="category-form"
-          options={{ title: t.categoryForm.title, presentation: "modal" }}
+          name="folder-form"
+          options={{ title: t.folderForm.title, presentation: "modal" }}
         />
         <Stack.Screen
           name="credential-form"

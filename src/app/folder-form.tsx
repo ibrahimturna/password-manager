@@ -6,51 +6,51 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useVault } from "@/data/vault-context";
 import {
-  type CategoryNameError,
-  MAX_CATEGORY_NAME_LENGTH,
-} from "@/features/categories/category-name";
-import { CategoryPickerRow, getCategoryPickerRows } from "@/features/categories/category-picker";
-import { getCategoryById, getCategoryPath } from "@/features/categories/category-tree";
-import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
+  type FolderNameError,
+  MAX_FOLDER_NAME_LENGTH,
+} from "@/features/folders/folder-name";
+import { FolderPickerRow, getFolderPickerRows } from "@/features/folders/folder-picker";
+import { getFolderById, getFolderPath } from "@/features/folders/folder-tree";
+import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Translations } from "@/i18n/en";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
-import type { Category } from "@/types/vault";
+import type { Folder } from "@/types/vault";
 
 type Mode = "create" | "rename";
 
-// Creates a category or renames one.
-// Opened with no params from the round "+" button (new top-level category),
-// or from a row's "⋮" actions with `mode` and `categoryId` filled in.
-export default function CategoryFormScreen() {
+// Creates a folder or renames one.
+// Opened with no params from the round "+" button (new top-level folder),
+// or from a row's "⋮" actions with `mode` and `folderId` filled in.
+export default function FolderFormScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const params = useLocalSearchParams<{ mode?: string; categoryId?: string }>();
-  const { categories, createCategory, renameCategory } = useVault();
-  const { expandWithParents } = useExpandedCategories();
+  const params = useLocalSearchParams<{ mode?: string; folderId?: string }>();
+  const { folders, createFolder, renameFolder } = useVault();
+  const { expandWithParents } = useExpandedFolders();
   const insets = useSafeAreaInsets();
 
-  // The params only set the starting values. Unknown values fall back to "new top-level category".
-  const initialCategory =
-    params.categoryId === undefined ? undefined : getCategoryById(categories, params.categoryId);
+  // The params only set the starting values. Unknown values fall back to "new top-level folder".
+  const initialFolder =
+    params.folderId === undefined ? undefined : getFolderById(folders, params.folderId);
   const initialMode: Mode =
-    params.mode === "rename" && initialCategory !== undefined ? "rename" : "create";
+    params.mode === "rename" && initialFolder !== undefined ? "rename" : "create";
 
   const [mode, setMode] = useState<Mode>(initialMode);
-  // create: the parent (null = top level). rename: the category to rename (null = none chosen yet).
-  const [selectedId, setSelectedId] = useState<string | null>(initialCategory?.id ?? null);
-  const [name, setName] = useState(initialMode === "rename" ? (initialCategory?.name ?? "") : "");
-  const [error, setError] = useState<CategoryNameError | null>(null);
+  // create: the parent (null = top level). rename: the folder to rename (null = none chosen yet).
+  const [selectedId, setSelectedId] = useState<string | null>(initialFolder?.id ?? null);
+  const [name, setName] = useState(initialMode === "rename" ? (initialFolder?.name ?? "") : "");
+  const [error, setError] = useState<FolderNameError | null>(null);
 
-  const pickerRows = getCategoryPickerRows(categories);
+  const pickerRows = getFolderPickerRows(folders);
 
   const selectedPath =
     selectedId === null
       ? null
-      : getCategoryPath(categories, selectedId)
-          .map((category) => category.name)
+      : getFolderPath(folders, selectedId)
+          .map((folder) => folder.name)
           .join(" › ");
   const canSave = mode === "create" || selectedId !== null;
 
@@ -62,33 +62,33 @@ export default function CategoryFormScreen() {
     setError(null);
   }
 
-  function selectCategory(category: Category | null) {
-    setSelectedId(category?.id ?? null);
+  function selectFolder(folder: Folder | null) {
+    setSelectedId(folder?.id ?? null);
     setError(null);
-    if (mode === "rename" && category !== null) {
-      setName(category.name);
+    if (mode === "rename" && folder !== null) {
+      setName(folder.name);
     }
   }
 
   function save() {
     if (mode === "create") {
-      const result = createCategory(name, selectedId);
+      const result = createFolder(name, selectedId);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      // Open the parent (and the categories above it) so the new category is visible.
-      // We open the parent, not the new category: `categories` in this render does not
-      // contain the new category yet, but it does contain the parent.
+      // Open the parent (and the folders above it) so the new folder is visible.
+      // We open the parent, not the new folder: `folders` in this render does not
+      // contain the new folder yet, but it does contain the parent.
       expandWithParents(selectedId);
     } else {
       if (selectedId === null) return;
-      const result = renameCategory(selectedId, name);
+      const result = renameFolder(selectedId, name);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      expandWithParents(getCategoryById(categories, selectedId)?.parentId ?? null);
+      expandWithParents(getFolderById(folders, selectedId)?.parentId ?? null);
     }
     router.back();
   }
@@ -97,21 +97,21 @@ export default function CategoryFormScreen() {
     <View style={styles.form}>
       <SegmentedControl
         options={[
-          { value: "create", label: t.categoryForm.newCategory },
-          { value: "rename", label: t.categoryForm.rename },
+          { value: "create", label: t.folderForm.newFolder },
+          { value: "rename", label: t.folderForm.rename },
         ]}
         value={mode}
         onChange={changeMode}
       />
 
-      <Text style={styles.label}>{mode === "create" ? t.categoryForm.createInside : t.categoryForm.categoryToRename}</Text>
+      <Text style={styles.label}>{mode === "create" ? t.folderForm.createInside : t.folderForm.folderToRename}</Text>
       <Text style={styles.selection}>
         {mode === "create"
-          ? (selectedPath ?? t.categoryForm.topLevel)
-          : (selectedPath ?? t.categoryForm.chooseCategoryBelow)}
+          ? (selectedPath ?? t.folderForm.topLevel)
+          : (selectedPath ?? t.folderForm.chooseFolderBelow)}
       </Text>
 
-      <Text style={styles.label}>{mode === "create" ? t.categoryForm.name : t.categoryForm.newName}</Text>
+      <Text style={styles.label}>{mode === "create" ? t.folderForm.name : t.folderForm.newName}</Text>
       <TextInput
         value={name}
         onChangeText={(text) => {
@@ -121,24 +121,24 @@ export default function CategoryFormScreen() {
         onSubmitEditing={save}
         editable={canSave}
         // The phone refuses extra characters itself (no flicker). It counts like `.length`,
-        // so an emoji uses 2 places; validateCategoryName still checks every name on save.
-        maxLength={MAX_CATEGORY_NAME_LENGTH}
-        // Open the keyboard straight away only when a row's "⋮" action chose the category.
-        autoFocus={initialCategory !== undefined}
+        // so an emoji uses 2 places; validateFolderName still checks every name on save.
+        maxLength={MAX_FOLDER_NAME_LENGTH}
+        // Open the keyboard straight away only when a row's "⋮" action chose the folder.
+        autoFocus={initialFolder !== undefined}
         returnKeyType="done"
-        placeholder={canSave ? t.categoryForm.namePlaceholder : t.categoryForm.chooseCategoryFirst}
+        placeholder={canSave ? t.folderForm.namePlaceholder : t.folderForm.chooseFolderFirst}
         placeholderTextColor={colors.onSurfaceVariant}
         selectionColor={colors.primary}
         // The style never changes after the input appears: on Android, changing the input's
         // background later reset its padding to zero.
         style={styles.input}
-        accessibilityLabel={mode === "create" ? t.categoryForm.name : t.categoryForm.newName}
+        accessibilityLabel={mode === "create" ? t.folderForm.name : t.folderForm.newName}
       />
       {error !== null && <Text style={styles.error}>{getErrorMessage(error, t)}</Text>}
 
       <View style={styles.buttons}>
         <Pressable onPress={() => router.back()} style={styles.button} accessibilityRole="button">
-          <Text style={styles.cancelText}>{t.categoryForm.cancel}</Text>
+          <Text style={styles.cancelText}>{t.folderForm.cancel}</Text>
         </Pressable>
         <Pressable
           onPress={save}
@@ -148,21 +148,21 @@ export default function CategoryFormScreen() {
           accessibilityState={{ disabled: !canSave }}
         >
           <Text style={[styles.saveText, !canSave && styles.saveTextDisabled]}>
-            {t.categoryForm.save}
+            {t.folderForm.save}
           </Text>
         </Pressable>
       </View>
 
       <Text style={styles.label}>
-        {mode === "create" ? t.categoryForm.chooseWhereToCreate : t.categoryForm.chooseCategory}
+        {mode === "create" ? t.folderForm.chooseWhereToCreate : t.folderForm.chooseFolder}
       </Text>
       {mode === "create" && (
-        <CategoryPickerRow
+        <FolderPickerRow
           icon="home"
-          label={t.categoryForm.topLevel}
+          label={t.folderForm.topLevel}
           depth={0}
           isSelected={selectedId === null}
-          onPress={() => selectCategory(null)}
+          onPress={() => selectFolder(null)}
         />
       )}
     </View>
@@ -171,18 +171,18 @@ export default function CategoryFormScreen() {
   return (
     <FlatList
       data={pickerRows}
-      keyExtractor={(row) => row.category.id}
+      keyExtractor={(row) => row.folder.id}
       ListHeaderComponent={header}
       // Lets a tap on a list row work while the keyboard is open.
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
       renderItem={({ item }) => (
-        <CategoryPickerRow
+        <FolderPickerRow
           icon="folder"
-          label={item.category.name}
+          label={item.folder.name}
           depth={item.depth}
-          isSelected={selectedId === item.category.id}
-          onPress={() => selectCategory(item.category)}
+          isSelected={selectedId === item.folder.id}
+          onPress={() => selectFolder(item.folder)}
         />
       )}
     />
@@ -190,14 +190,14 @@ export default function CategoryFormScreen() {
 }
 
 // Turns an error code into text for the user, in the current language.
-function getErrorMessage(error: CategoryNameError, t: Translations): string {
+function getErrorMessage(error: FolderNameError, t: Translations): string {
   switch (error) {
     case "empty":
-      return t.categoryForm.errors.empty;
+      return t.folderForm.errors.empty;
     case "too-long":
-      return t.categoryForm.errors.tooLong(MAX_CATEGORY_NAME_LENGTH);
+      return t.folderForm.errors.tooLong(MAX_FOLDER_NAME_LENGTH);
     case "duplicate":
-      return t.categoryForm.errors.duplicate;
+      return t.folderForm.errors.duplicate;
   }
 }
 

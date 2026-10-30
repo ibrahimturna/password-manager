@@ -6,10 +6,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/icon";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
-import { getCategoryById, getSubtreeRows, type TreeRow } from "@/features/categories/category-tree";
-import { CategoryTreeList } from "@/features/categories/category-tree-list";
-import { DeleteCategoryDialog } from "@/features/categories/delete-category-dialog";
-import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
+import { getFolderById, getSubtreeRows, type TreeRow } from "@/features/folders/folder-tree";
+import { FolderTreeList } from "@/features/folders/folder-tree-list";
+import { DeleteFolderDialog } from "@/features/folders/delete-folder-dialog";
+import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
 import { copyPassword } from "@/features/credentials/copy-password";
 import { useUndo } from "@/features/undo/undo-context";
 import { useTranslation } from "@/i18n/use-translation";
@@ -24,21 +24,21 @@ export default function HomeScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { categories, credentials, deleteCategory, restoreDeletion } = useVault();
-  const { expandedIds, toggleCategory, collapseAll, forgetCategories } = useExpandedCategories();
+  const { folders, credentials, deleteFolder, restoreDeletion } = useVault();
+  const { expandedIds, toggleFolder, collapseAll, forgetFolders } = useExpandedFolders();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
-  // The category whose "⋮" actions are open, or null. Only one at a time.
-  const [menuCategoryId, setMenuCategoryId] = useState<string | null>(null);
-  // Whether the "+" button's menu (New password / New category) is open.
+  // The folder whose "⋮" actions are open, or null. Only one at a time.
+  const [menuFolderId, setMenuFolderId] = useState<string | null>(null);
+  // Whether the "+" button's menu (New password / New folder) is open.
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   // The credential whose password was just copied; its copy icon shows a check for a moment.
   const [copiedCredentialId, setCopiedCredentialId] = useState<string | null>(null);
 
-  // The category the delete dialog asks about, with its preview rows.
+  // The folder the delete dialog asks about, with its preview rows.
   // Kept after the dialog closes, so the dialog does not go blank while it fades out.
   const [deleteTarget, setDeleteTarget] = useState<{
-    category: { id: string; name: string };
+    folder: { id: string; name: string };
     rows: TreeRow[];
   } | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -47,17 +47,17 @@ export default function HomeScreen() {
 
   const hasExpanded = expandedIds.size > 0;
 
-  function toggleMenu(categoryId: string) {
-    setMenuCategoryId((current) => (current === categoryId ? null : categoryId));
+  function toggleMenu(folderId: string) {
+    setMenuFolderId((current) => (current === folderId ? null : folderId));
   }
 
   // Closes whichever menu is open (a row's "⋮" actions or the "+" menu).
   function closeMenu() {
-    setMenuCategoryId(null);
+    setMenuFolderId(null);
     setIsAddMenuOpen(false);
   }
 
-  function openCredentialForm(params: { credentialId?: string; categoryId?: string }) {
+  function openCredentialForm(params: { credentialId?: string; folderId?: string }) {
     closeMenu();
     router.push({ pathname: "/credential-form", params });
   }
@@ -78,10 +78,10 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, [copiedCredentialId]);
 
-  function openDeleteDialog(categoryId: string) {
-    const category = getCategoryById(categories, categoryId);
-    if (category === undefined) return;
-    setDeleteTarget({ category, rows: getSubtreeRows(categories, credentials, categoryId) });
+  function openDeleteDialog(folderId: string) {
+    const folder = getFolderById(folders, folderId);
+    if (folder === undefined) return;
+    setDeleteTarget({ folder, rows: getSubtreeRows(folders, credentials, folderId) });
     setIsDeleteDialogOpen(true);
   }
 
@@ -89,10 +89,10 @@ export default function HomeScreen() {
     setIsDeleteDialogOpen(false);
     if (deleteTarget === null) return;
 
-    const deletion = deleteCategory(deleteTarget.category.id);
-    // Deleted categories must not stay in the open/closed state.
-    forgetCategories(deletion.categories.map((removed) => removed.item.id));
-    offerUndo(t.deleteCategory.deleted(deleteTarget.category.name), () =>
+    const deletion = deleteFolder(deleteTarget.folder.id);
+    // Deleted folders must not stay in the open/closed state.
+    forgetFolders(deletion.folders.map((removed) => removed.item.id));
+    offerUndo(t.deleteFolder.deleted(deleteTarget.folder.name), () =>
       restoreDeletion(deletion),
     );
   }
@@ -105,7 +105,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       return () => {
-        setMenuCategoryId(null);
+        setMenuFolderId(null);
         setIsAddMenuOpen(false);
         dismissUndo();
       };
@@ -137,21 +137,21 @@ export default function HomeScreen() {
         </Text>
       </Pressable>
 
-      <CategoryTreeList
+      <FolderTreeList
         expandedIds={expandedIds}
-        menuCategoryId={menuCategoryId}
+        menuFolderId={menuFolderId}
         copiedCredentialId={copiedCredentialId}
-        onToggleCategory={toggleCategory}
+        onToggleFolder={toggleFolder}
         onToggleMenu={toggleMenu}
         onCloseMenu={closeMenu}
-        onAddPassword={(categoryId) => openCredentialForm({ categoryId })}
-        onAddSubcategory={(parentId) =>
-          router.push({ pathname: "/category-form", params: { mode: "create", categoryId: parentId } })
+        onAddPassword={(folderId) => openCredentialForm({ folderId })}
+        onAddSubfolder={(parentId) =>
+          router.push({ pathname: "/folder-form", params: { mode: "create", folderId: parentId } })
         }
-        onRenameCategory={(categoryId) =>
-          router.push({ pathname: "/category-form", params: { mode: "rename", categoryId } })
+        onRenameFolder={(folderId) =>
+          router.push({ pathname: "/folder-form", params: { mode: "rename", folderId } })
         }
-        onDeleteCategory={openDeleteDialog}
+        onDeleteFolder={openDeleteDialog}
         onOpenCredential={(credentialId) => openCredentialForm({ credentialId })}
         onCopyCredential={copyCredentialPassword}
       />
@@ -159,7 +159,7 @@ export default function HomeScreen() {
       {pendingUndo !== null && (
         <Snackbar
           message={pendingUndo.message}
-          action={{ label: t.deleteCategory.undo, onPress: runUndo }}
+          action={{ label: t.deleteFolder.undo, onPress: runUndo }}
           // Sits above the round button, as Material recommends.
           bottom={insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12}
         />
@@ -177,10 +177,10 @@ export default function HomeScreen() {
           />
           <AddMenuItem
             icon="newFolder"
-            label={t.home.newCategory}
+            label={t.home.newFolder}
             onPress={() => {
               closeMenu();
-              router.push("/category-form");
+              router.push("/folder-form");
             }}
           />
         </View>
@@ -188,7 +188,7 @@ export default function HomeScreen() {
 
       <Pressable
         onPress={() => {
-          setMenuCategoryId(null);
+          setMenuFolderId(null);
           setIsAddMenuOpen((open) => !open);
         }}
         style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
@@ -203,7 +203,7 @@ export default function HomeScreen() {
         />
       </Pressable>
 
-      <DeleteCategoryDialog
+      <DeleteFolderDialog
         visible={isDeleteDialogOpen}
         rows={deleteTarget?.rows ?? []}
         onCancel={() => setIsDeleteDialogOpen(false)}

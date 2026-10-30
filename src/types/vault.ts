@@ -1,16 +1,16 @@
 // Core data models for the vault.
-// Categories form a tree through `parentId`; credentials belong to one category.
+// Folders form a tree through `parentId`; credentials belong to one folder.
 
-export type Category = {
+export type Folder = {
   id: string;
   name: string;
-  // null means this is a top-level (root) category.
+  // null means this is a top-level (root) folder.
   parentId: string | null;
 };
 
 export type Credential = {
   id: string;
-  categoryId: string;
+  folderId: string;
   title: string;
   username: string | null;
   // Plain text is acceptable ONLY for in-memory mock data.

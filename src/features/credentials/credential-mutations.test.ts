@@ -10,10 +10,10 @@ import type { ValidCredential } from "./credential-validation";
 
 const CREATED_AT = 1000;
 
-function makeCredential(id: string, categoryId: string): Credential {
+function makeCredential(id: string, folderId: string): Credential {
   return {
     id,
-    categoryId,
+    folderId,
     title: id,
     username: null,
     password: "fake-password",
@@ -29,7 +29,7 @@ const testCredentials: Credential[] = [
 ];
 
 const newValues: ValidCredential = {
-  categoryId: "social",
+  folderId: "social",
   title: "Mastodon",
   username: "demo",
   password: "fake-password-2",

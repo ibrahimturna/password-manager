@@ -1,12 +1,12 @@
 import {
-  addCategory,
-  type CategoryDeletion,
-  deleteCategory,
-  renameCategory,
+  addFolder,
+  type FolderDeletion,
+  deleteFolder,
+  renameFolder,
   restoreDeletion,
-} from "@/features/categories/category-mutations";
-import { type CategoryNameError, validateCategoryName } from "@/features/categories/category-name";
-import { getCategoryById } from "@/features/categories/category-tree";
+} from "@/features/folders/folder-mutations";
+import { type FolderNameError, validateFolderName } from "@/features/folders/folder-name";
+import { getFolderById } from "@/features/folders/folder-tree";
 import {
   addCredential,
   deleteCredential,
@@ -18,14 +18,14 @@ import {
   type CredentialInput,
   validateCredential,
 } from "@/features/credentials/credential-validation";
-import type { Category, Credential } from "@/types/vault";
+import type { Credential, Folder } from "@/types/vault";
 import type { RemovedItem } from "@/utils/removed-items";
 
-export type CreateCategoryResult =
-  | { ok: true; category: Category }
-  | { ok: false; error: CategoryNameError };
+export type CreateFolderResult =
+  | { ok: true; folder: Folder }
+  | { ok: false; error: FolderNameError };
 
-export type RenameCategoryResult = { ok: true } | { ok: false; error: CategoryNameError };
+export type RenameFolderResult = { ok: true } | { ok: false; error: FolderNameError };
 
 export type SaveCredentialResult =
   | { ok: true; credential: Credential }
@@ -38,15 +38,15 @@ export type CredentialDeletion = RemovedItem<Credential>[];
 // Screens depend on this type, not on where the data is stored, so the in-memory
 // version below can be replaced by a SQLite version in Milestone 6.
 export type VaultRepository = {
-  getCategories(): Category[];
+  getFolders(): Folder[];
   getCredentials(): Credential[];
-  // On success, returns the new category so the caller knows its id.
-  createCategory(name: string, parentId: string | null): CreateCategoryResult;
-  renameCategory(id: string, name: string): RenameCategoryResult;
-  // Deletes the category, everything below it and their credentials.
+  // On success, returns the new folder so the caller knows its id.
+  createFolder(name: string, parentId: string | null): CreateFolderResult;
+  renameFolder(id: string, name: string): RenameFolderResult;
+  // Deletes the folder, everything below it and their credentials.
   // Returns what was removed, so the delete can be undone with restoreDeletion.
-  deleteCategory(id: string): CategoryDeletion;
-  restoreDeletion(deletion: CategoryDeletion): void;
+  deleteFolder(id: string): FolderDeletion;
+  restoreDeletion(deletion: FolderDeletion): void;
 
   // On success, returns the saved credential (with its id and timestamps).
   createCredential(input: CredentialInput): SaveCredentialResult;
@@ -57,7 +57,7 @@ export type VaultRepository = {
 };
 
 type VaultSeed = {
-  categories: Category[];
+  folders: Folder[];
   credentials: Credential[];
 };
 
@@ -70,14 +70,14 @@ export function createInMemoryVaultRepository(
   now: () => number,
 ): VaultRepository {
   // Only the functions below can see or replace these arrays.
-  let categories = seed.categories;
+  let folders = seed.folders;
   let credentials = seed.credentials;
 
-  // A credential must belong to an existing category. The UI only offers existing ones,
-  // so a missing category is a bug in the app, not a user mistake: it throws.
-  function requireCategory(categoryId: string) {
-    if (getCategoryById(categories, categoryId) === undefined) {
-      throw new Error(`Category "${categoryId}" does not exist.`);
+  // A credential must belong to an existing folder. The UI only offers existing ones,
+  // so a missing folder is a bug in the app, not a user mistake: it throws.
+  function requireFolder(folderId: string) {
+    if (getFolderById(folders, folderId) === undefined) {
+      throw new Error(`Folder "${folderId}" does not exist.`);
     }
   }
 
@@ -90,60 +90,60 @@ export function createInMemoryVaultRepository(
   }
 
   return {
-    getCategories: () => categories,
+    getFolders: () => folders,
     getCredentials: () => credentials,
 
-    createCategory(name, parentId) {
+    createFolder(name, parentId) {
       // A missing parent is a bug in the app, not a user mistake, so it throws.
-      if (parentId !== null && getCategoryById(categories, parentId) === undefined) {
-        throw new Error(`Cannot create a category: parent "${parentId}" does not exist.`);
+      if (parentId !== null && getFolderById(folders, parentId) === undefined) {
+        throw new Error(`Cannot create a folder: parent "${parentId}" does not exist.`);
       }
 
-      const validation = validateCategoryName(categories, name, parentId, null);
+      const validation = validateFolderName(folders, name, parentId, null);
       if (!validation.ok) {
         return validation;
       }
 
-      const category: Category = { id: generateId(), name: validation.name, parentId };
-      categories = addCategory(categories, category.id, category.name, category.parentId);
-      return { ok: true, category };
+      const folder: Folder = { id: generateId(), name: validation.name, parentId };
+      folders = addFolder(folders, folder.id, folder.name, folder.parentId);
+      return { ok: true, folder };
     },
 
-    renameCategory(id, name) {
-      const category = getCategoryById(categories, id);
-      if (category === undefined) {
-        throw new Error(`Cannot rename: category "${id}" does not exist.`);
+    renameFolder(id, name) {
+      const folder = getFolderById(folders, id);
+      if (folder === undefined) {
+        throw new Error(`Cannot rename: folder "${id}" does not exist.`);
       }
 
-      const validation = validateCategoryName(categories, name, category.parentId, id);
+      const validation = validateFolderName(folders, name, folder.parentId, id);
       if (!validation.ok) {
         return validation;
       }
 
-      categories = renameCategory(categories, id, validation.name);
+      folders = renameFolder(folders, id, validation.name);
       return { ok: true };
     },
 
-    deleteCategory(id) {
-      // Like a missing parent above: the UI only offers existing categories, so this is a bug.
-      if (getCategoryById(categories, id) === undefined) {
-        throw new Error(`Cannot delete: category "${id}" does not exist.`);
+    deleteFolder(id) {
+      // Like a missing parent above: the UI only offers existing folders, so this is a bug.
+      if (getFolderById(folders, id) === undefined) {
+        throw new Error(`Cannot delete: folder "${id}" does not exist.`);
       }
 
-      const result = deleteCategory(categories, credentials, id);
-      categories = result.categories;
+      const result = deleteFolder(folders, credentials, id);
+      folders = result.folders;
       credentials = result.credentials;
       return result.deletion;
     },
 
     restoreDeletion(deletion) {
-      const result = restoreDeletion(categories, credentials, deletion);
-      categories = result.categories;
+      const result = restoreDeletion(folders, credentials, deletion);
+      folders = result.folders;
       credentials = result.credentials;
     },
 
     createCredential(input) {
-      requireCategory(input.categoryId);
+      requireFolder(input.folderId);
       const validation = validateCredential(input);
       if (!validation.ok) {
         return validation;
@@ -156,7 +156,7 @@ export function createInMemoryVaultRepository(
 
     updateCredential(id, input) {
       requireCredential(id);
-      requireCategory(input.categoryId);
+      requireFolder(input.folderId);
       const validation = validateCredential(input);
       if (!validation.ok) {
         return validation;

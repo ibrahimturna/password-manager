@@ -5,10 +5,10 @@ import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
-import type { TreeRow } from "./category-tree";
-import { getRowKey, ReadOnlyTreeRow } from "./category-tree-list";
+import type { TreeRow } from "./folder-tree";
+import { getRowKey, ReadOnlyTreeRow } from "./folder-tree-list";
 
-type DeleteCategoryDialogProps = {
+type DeleteFolderDialogProps = {
   visible: boolean;
   // Everything that will be deleted, as read-only tree rows.
   rows: TreeRow[];
@@ -16,19 +16,19 @@ type DeleteCategoryDialogProps = {
   onConfirm: () => void;
 };
 
-// Asks before deleting a category, and shows everything that will be deleted with it.
+// Asks before deleting a folder, and shows everything that will be deleted with it.
 // A dialog (not a screen), because it is a quick yes/no decision.
-export function DeleteCategoryDialog({ visible, rows, onCancel, onConfirm }: DeleteCategoryDialogProps) {
+export function DeleteFolderDialog({ visible, rows, onCancel, onConfirm }: DeleteFolderDialogProps) {
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
 
   return (
     <ConfirmDialog
       visible={visible}
-      title={t.deleteCategory.title}
-      message={t.deleteCategory.willDelete}
-      cancelLabel={t.deleteCategory.cancel}
-      confirmLabel={t.deleteCategory.confirm}
+      title={t.deleteFolder.title}
+      message={t.deleteFolder.willDelete}
+      cancelLabel={t.deleteFolder.cancel}
+      confirmLabel={t.deleteFolder.confirm}
       onCancel={onCancel}
       onConfirm={onConfirm}
     >
