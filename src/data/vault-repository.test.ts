@@ -123,3 +123,26 @@ describe("createInMemoryVaultRepository", () => {
     ]);
   });
 });
+
+describe("deleteCategory and restoreDeletion", () => {
+  it("deletes a category with its subcategories, then undo brings them back", () => {
+    const repository = makeRepository();
+    const created = repository.createCategory("Investments", "banks");
+    const before = repository.getCategories();
+
+    const deletion = repository.deleteCategory("banks");
+
+    expect(repository.getCategories().map((category) => category.id)).toEqual(["social"]);
+    expect(created.ok && deletion.categories.length).toBe(2);
+
+    repository.restoreDeletion(deletion);
+
+    expect(repository.getCategories()).toEqual(before);
+  });
+
+  it("throws when the category does not exist", () => {
+    const repository = makeRepository();
+
+    expect(() => repository.deleteCategory("missing")).toThrow();
+  });
+});

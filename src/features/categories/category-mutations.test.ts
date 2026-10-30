@@ -1,6 +1,11 @@
-import type { Category } from "@/types/vault";
+import type { Category, Credential } from "@/types/vault";
 
-import { addCategory, renameCategory } from "./category-mutations";
+import {
+  addCategory,
+  deleteCategory,
+  renameCategory,
+  restoreDeletion,
+} from "./category-mutations";
 
 const testCategories: Category[] = [
   { id: "banks", name: "Banks", parentId: null },
@@ -52,5 +57,94 @@ describe("renameCategory", () => {
     const result = renameCategory(testCategories, "missing", "Anything");
 
     expect(result).toEqual(testCategories);
+  });
+});
+
+// A deeper tree for the delete tests:
+//
+// Banks
+// ├── Investments
+// │   └── Stocks
+// └── Cards
+// Social
+const deleteTestCategories: Category[] = [
+  { id: "banks", name: "Banks", parentId: null },
+  { id: "investments", name: "Investments", parentId: "banks" },
+  { id: "social", name: "Social", parentId: null },
+  { id: "stocks", name: "Stocks", parentId: "investments" },
+  { id: "cards", name: "Cards", parentId: "banks" },
+];
+
+function makeCredential(id: string, categoryId: string): Credential {
+  return {
+    id,
+    categoryId,
+    title: id,
+    username: null,
+    password: "fake-password",
+    createdAt: 0,
+    updatedAt: 0,
+  };
+}
+
+const deleteTestCredentials: Credential[] = [
+  makeCredential("bank-login", "banks"),
+  makeCredential("instagram", "social"),
+  makeCredential("broker", "stocks"),
+  makeCredential("card", "cards"),
+];
+
+function ids(items: { id: string }[]): string[] {
+  return items.map((item) => item.id);
+}
+
+describe("deleteCategory", () => {
+  it("removes the category, everything below it, and their credentials", () => {
+    const result = deleteCategory(deleteTestCategories, deleteTestCredentials, "banks");
+
+    expect(ids(result.categories)).toEqual(["social"]);
+    expect(ids(result.credentials)).toEqual(["instagram"]);
+  });
+
+  it("leaves other branches untouched when deleting a nested category", () => {
+    const result = deleteCategory(deleteTestCategories, deleteTestCredentials, "investments");
+
+    expect(ids(result.categories)).toEqual(["banks", "social", "cards"]);
+    expect(ids(result.credentials)).toEqual(["bank-login", "instagram", "card"]);
+  });
+
+  it("does not change the arrays it is given", () => {
+    deleteCategory(deleteTestCategories, deleteTestCredentials, "banks");
+
+    expect(deleteTestCategories).toHaveLength(5);
+    expect(deleteTestCredentials).toHaveLength(4);
+  });
+});
+
+describe("restoreDeletion", () => {
+  it("puts everything back in its original order", () => {
+    const { categories, credentials, deletion } = deleteCategory(
+      deleteTestCategories,
+      deleteTestCredentials,
+      "banks",
+    );
+
+    const restored = restoreDeletion(categories, credentials, deletion);
+
+    expect(restored.categories).toEqual(deleteTestCategories);
+    expect(restored.credentials).toEqual(deleteTestCredentials);
+  });
+
+  it("restores a nested category to its original place", () => {
+    const { categories, credentials, deletion } = deleteCategory(
+      deleteTestCategories,
+      deleteTestCredentials,
+      "investments",
+    );
+
+    const restored = restoreDeletion(categories, credentials, deletion);
+
+    expect(restored.categories).toEqual(deleteTestCategories);
+    expect(restored.credentials).toEqual(deleteTestCredentials);
   });
 });

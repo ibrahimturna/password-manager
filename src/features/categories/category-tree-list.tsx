@@ -22,6 +22,7 @@ type CategoryTreeListProps = {
   onCloseMenu: () => void;
   onAddSubcategory: (parentId: string) => void;
   onRenameCategory: (categoryId: string) => void;
+  onDeleteCategory: (categoryId: string) => void;
 };
 
 // Shows the whole vault as an expandable tree. Tapping a category expands or collapses it;
@@ -35,6 +36,7 @@ export function CategoryTreeList({
   onCloseMenu,
   onAddSubcategory,
   onRenameCategory,
+  onDeleteCategory,
 }: CategoryTreeListProps) {
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
@@ -74,17 +76,17 @@ export function CategoryTreeList({
                   onCloseMenu();
                   onRenameCategory(categoryId);
                 }}
+                onDelete={() => {
+                  onCloseMenu();
+                  onDeleteCategory(categoryId);
+                }}
               />
             );
           }
           case "credential":
-            return <CredentialRow credential={item.credential} depth={item.depth} />;
           case "empty":
-            return (
-              <Text style={[styles.emptyText, { paddingLeft: item.depth * INDENT_PER_LEVEL }]}>
-                {t.tree.empty}
-              </Text>
-            );
+            // These rows cannot be tapped anyway.
+            return <ReadOnlyTreeRow row={item} />;
         }
       }}
       ListEmptyComponent={<Text style={styles.emptyText}>{t.tree.noCategories}</Text>}
@@ -92,7 +94,7 @@ export function CategoryTreeList({
   );
 }
 
-function getRowKey(row: TreeRow): string {
+export function getRowKey(row: TreeRow): string {
   switch (row.kind) {
     case "category":
       return `category-${row.category.id}`;
@@ -112,6 +114,7 @@ type CategoryRowProps = {
   onPressMenu: () => void;
   onAddSubcategory: () => void;
   onRename: () => void;
+  onDelete: () => void;
 };
 
 function CategoryRow({
@@ -123,6 +126,7 @@ function CategoryRow({
   onPressMenu,
   onAddSubcategory,
   onRename,
+  onDelete,
 }: CategoryRowProps) {
   const t = useTranslation();
   const { colors } = useTheme();
@@ -138,13 +142,7 @@ function CategoryRow({
           accessibilityRole="button"
           accessibilityState={{ expanded: isExpanded }}
         >
-          <Icon
-            name={isExpanded ? "expandMore" : "chevronRight"}
-            color={colors.onSurfaceVariant}
-            size={20}
-          />
-          <Icon name={isExpanded ? "folderOpen" : "folder"} color={colors.primary} />
-          <Text style={styles.rowTitle}>{category.name}</Text>
+          <CategoryLabel category={category} isExpanded={isExpanded} />
         </Pressable>
         <Pressable
           onPress={onPressMenu}
@@ -162,22 +160,69 @@ function CategoryRow({
         <View style={[styles.menu, indent]}>
           <MenuAction icon="newFolder" label={t.tree.addSubcategory} onPress={onAddSubcategory} />
           <MenuAction icon="edit" label={t.tree.rename} onPress={onRename} />
+          <MenuAction icon="delete" label={t.tree.delete} onPress={onDelete} isDestructive />
         </View>
       )}
     </View>
   );
 }
 
-type MenuActionProps = { icon: IconName; label: string; onPress: () => void };
-
-function MenuAction({ icon, label, onPress }: MenuActionProps) {
+// The arrow, folder icon and name of a category row.
+// Shared by the tappable tree and the read-only preview, so both look the same.
+function CategoryLabel({ category, isExpanded }: { category: Category; isExpanded: boolean }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
   return (
+    <>
+      <Icon
+        name={isExpanded ? "expandMore" : "chevronRight"}
+        color={colors.onSurfaceVariant}
+        size={20}
+      />
+      <Icon name={isExpanded ? "folderOpen" : "folder"} color={colors.primary} />
+      <Text style={styles.rowTitle}>{category.name}</Text>
+    </>
+  );
+}
+
+// One tree row that cannot be tapped. Used to preview a part of the tree (e.g. before a delete).
+export function ReadOnlyTreeRow({ row }: { row: TreeRow }) {
+  const t = useTranslation();
+  const styles = createStyles(useTheme().colors);
+  const indent = { paddingLeft: row.depth * INDENT_PER_LEVEL };
+
+  switch (row.kind) {
+    case "category":
+      return (
+        <View style={[styles.row, styles.categoryName, indent]}>
+          <CategoryLabel category={row.category} isExpanded={row.isExpanded} />
+        </View>
+      );
+    case "credential":
+      return <CredentialRow credential={row.credential} depth={row.depth} />;
+    case "empty":
+      return <Text style={[styles.emptyText, indent]}>{t.tree.empty}</Text>;
+  }
+}
+
+type MenuActionProps = {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  // Shown in the error colour, so actions that remove data stand out.
+  isDestructive?: boolean;
+};
+
+function MenuAction({ icon, label, onPress, isDestructive = false }: MenuActionProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const color = isDestructive ? colors.error : colors.primary;
+
+  return (
     <Pressable onPress={onPress} style={styles.menuAction} accessibilityRole="button">
-      <Icon name={icon} color={colors.primary} size={20} />
-      <Text style={styles.menuActionText}>{label}</Text>
+      <Icon name={icon} color={color} size={20} />
+      <Text style={[styles.menuActionText, { color }]}>{label}</Text>
     </Pressable>
   );
 }

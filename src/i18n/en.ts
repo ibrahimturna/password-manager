@@ -15,7 +15,16 @@ export const en = {
     actionsFor: (name: string) => `Actions for ${name}`,
     addSubcategory: "Add subcategory",
     rename: "Rename",
+    delete: "Delete",
     noUsername: "No username",
+  },
+  deleteCategory: {
+    title: "Delete category",
+    willDelete: "The following will be deleted:",
+    cancel: "Cancel",
+    confirm: "Delete",
+    deleted: (name: string) => `“${name}” deleted`,
+    undo: "Undo",
   },
   categoryForm: {
     title: "Category",

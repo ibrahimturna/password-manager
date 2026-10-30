@@ -1,4 +1,10 @@
-import { addCategory, renameCategory } from "@/features/categories/category-mutations";
+import {
+  addCategory,
+  type CategoryDeletion,
+  deleteCategory,
+  renameCategory,
+  restoreDeletion,
+} from "@/features/categories/category-mutations";
 import { type CategoryNameError, validateCategoryName } from "@/features/categories/category-name";
 import { getCategoryById } from "@/features/categories/category-tree";
 import type { Category, Credential } from "@/types/vault";
@@ -18,6 +24,10 @@ export type VaultRepository = {
   // On success, returns the new category so the caller knows its id.
   createCategory(name: string, parentId: string | null): CreateCategoryResult;
   renameCategory(id: string, name: string): RenameCategoryResult;
+  // Deletes the category, everything below it and their credentials.
+  // Returns what was removed, so the delete can be undone with restoreDeletion.
+  deleteCategory(id: string): CategoryDeletion;
+  restoreDeletion(deletion: CategoryDeletion): void;
 };
 
 type VaultSeed = {
@@ -33,7 +43,7 @@ export function createInMemoryVaultRepository(
 ): VaultRepository {
   // Only the functions below can see or replace these arrays.
   let categories = seed.categories;
-  const credentials = seed.credentials;
+  let credentials = seed.credentials;
 
   return {
     getCategories: () => categories,
@@ -68,6 +78,24 @@ export function createInMemoryVaultRepository(
 
       categories = renameCategory(categories, id, validation.name);
       return { ok: true };
+    },
+
+    deleteCategory(id) {
+      // Like a missing parent above: the UI only offers existing categories, so this is a bug.
+      if (getCategoryById(categories, id) === undefined) {
+        throw new Error(`Cannot delete: category "${id}" does not exist.`);
+      }
+
+      const result = deleteCategory(categories, credentials, id);
+      categories = result.categories;
+      credentials = result.credentials;
+      return result.deletion;
+    },
+
+    restoreDeletion(deletion) {
+      const result = restoreDeletion(categories, credentials, deletion);
+      categories = result.categories;
+      credentials = result.credentials;
     },
   };
 }

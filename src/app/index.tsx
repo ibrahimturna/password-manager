@@ -4,17 +4,22 @@ import { Pressable, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Icon } from "@/components/icon";
+import { Snackbar } from "@/components/snackbar";
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
+import { useDeleteUndo } from "@/features/categories/delete-undo-context";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
+
+const FLOATING_BUTTON_SIZE = 56;
 
 export default function HomeScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { expandedIds, toggleCategory, collapseAll } = useExpandedCategories();
+  const { pendingUndo, undoDelete, dismissUndo } = useDeleteUndo();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
   // The category whose "⋮" actions are open, or null. Only one at a time.
@@ -32,10 +37,16 @@ export default function HomeScreen() {
 
   // The returned function runs when this screen loses focus (another screen opens on top),
   // so a menu is never left open behind the form or the settings screen.
+  // An Undo from before also ends there: the vault can only change on another screen, so Undo
+  // always restores into exactly the state the delete left behind. (A delete confirmed on the
+  // confirmation screen starts a new Undo after this cleanup has already run.)
   useFocusEffect(
     useCallback(() => {
-      return () => setMenuCategoryId(null);
-    }, []),
+      return () => {
+        setMenuCategoryId(null);
+        dismissUndo();
+      };
+    }, [dismissUndo]),
   );
 
   return (
@@ -75,6 +86,9 @@ export default function HomeScreen() {
         onRenameCategory={(categoryId) =>
           router.push({ pathname: "/category-form", params: { mode: "rename", categoryId } })
         }
+        onDeleteCategory={(categoryId) =>
+          router.push({ pathname: "/delete-category", params: { categoryId } })
+        }
       />
 
       <Pressable
@@ -85,6 +99,16 @@ export default function HomeScreen() {
       >
         <Icon name="add" color={colors.onPrimaryContainer} size={28} />
       </Pressable>
+
+      {pendingUndo !== null && (
+        <Snackbar
+          message={t.deleteCategory.deleted(pendingUndo.name)}
+          actionLabel={t.deleteCategory.undo}
+          onAction={undoDelete}
+          // Sits above the round button, as Material recommends.
+          bottom={insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12}
+        />
+      )}
     </Pressable>
   );
 }
@@ -117,9 +141,9 @@ function createStyles(colors: Palette) {
     floatingButton: {
       position: "absolute",
       right: 16,
-      width: 56,
-      height: 56,
-      borderRadius: 28, // half the size makes a circle
+      width: FLOATING_BUTTON_SIZE,
+      height: FLOATING_BUTTON_SIZE,
+      borderRadius: FLOATING_BUTTON_SIZE / 2, // half the size makes a circle
       backgroundColor: colors.primaryContainer,
       alignItems: "center",
       justifyContent: "center",

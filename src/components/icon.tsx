@@ -9,6 +9,7 @@ const ICONS = {
   check: { ios: "checkmark", android: "check" },
   chevronRight: { ios: "chevron.right", android: "chevron_right" },
   collapseAll: { ios: "rectangle.compress.vertical", android: "unfold_less" },
+  delete: { ios: "trash", android: "delete" },
   edit: { ios: "pencil", android: "edit" },
   expandMore: { ios: "chevron.down", android: "expand_more" },
   folder: { ios: "folder", android: "folder" },

@@ -137,3 +137,26 @@ export function getVisibleRows(
   addContents(null, 0);
   return rows;
 }
+
+// The rows of one category and everything inside it, fully expanded, with the category
+// itself at depth 0. Used to preview what a delete will remove.
+// Returns [] if the category does not exist.
+export function getSubtreeRows(
+  categories: Category[],
+  credentials: Credential[],
+  categoryId: string,
+): TreeRow[] {
+  const root = getCategoryById(categories, categoryId);
+  if (root === undefined) return [];
+
+  const subtreeIds = new Set([categoryId, ...getDescendantIds(categories, categoryId)]);
+  // Only the subtree, with its root shown as a top-level category.
+  const subtreeCategories = categories
+    .filter((category) => subtreeIds.has(category.id))
+    .map((category) => (category.id === categoryId ? { ...category, parentId: null } : category));
+  const subtreeCredentials = credentials.filter((credential) =>
+    subtreeIds.has(credential.categoryId),
+  );
+
+  return getVisibleRows(subtreeCategories, subtreeCredentials, subtreeIds);
+}

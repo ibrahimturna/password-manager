@@ -13,6 +13,8 @@ type ExpandedCategoriesValue = {
   // Opens the category and every category above it. null (top level) changes nothing.
   expandWithParents: (categoryId: string | null) => void;
   collapseAll: () => void;
+  // Forgets deleted categories, so "Collapse all" does not count categories that are gone.
+  forgetCategories: (categoryIds: string[]) => void;
 };
 
 const ExpandedCategoriesContext = createContext<ExpandedCategoriesValue | null>(null);
@@ -37,6 +39,14 @@ export function ExpandedCategoriesProvider({ children }: { children: ReactNode }
     setExpandedIds(new Set());
   }
 
+  function forgetCategories(categoryIds: string[]) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      for (const id of categoryIds) next.delete(id);
+      return next;
+    });
+  }
+
   return (
     <ExpandedCategoriesContext
       value={{
@@ -44,6 +54,7 @@ export function ExpandedCategoriesProvider({ children }: { children: ReactNode }
         toggleCategory,
         expandWithParents: expandCategoryWithParents,
         collapseAll,
+        forgetCategories,
       }}
     >
       {children}

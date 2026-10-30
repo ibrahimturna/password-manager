@@ -16,7 +16,16 @@ export const tr: Translations = {
     actionsFor: (name: string) => `${name} için işlemler`,
     addSubcategory: "Alt kategori ekle",
     rename: "Yeniden adlandır",
+    delete: "Sil",
     noUsername: "Kullanıcı adı yok",
+  },
+  deleteCategory: {
+    title: "Kategoriyi sil",
+    willDelete: "Şunlar silinecek:",
+    cancel: "İptal",
+    confirm: "Sil",
+    deleted: (name: string) => `“${name}” silindi`,
+    undo: "Geri al",
   },
   categoryForm: {
     title: "Kategori",

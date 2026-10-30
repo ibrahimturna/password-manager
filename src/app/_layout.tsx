@@ -4,6 +4,7 @@ import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
 
 import { VaultProvider } from "@/data/vault-context";
+import { DeleteUndoProvider } from "@/features/categories/delete-undo-context";
 import { ExpandedCategoriesProvider } from "@/features/categories/expanded-categories-context";
 import { SettingsButton } from "@/features/settings/settings-button";
 import { SettingsProvider } from "@/features/settings/settings-context";
@@ -12,11 +13,14 @@ import { useTheme } from "@/theme/use-theme";
 
 export default function RootLayout() {
   return (
-    // Every screen inside the providers shares the same settings, vault data and open/closed tree state.
+    // Every screen inside the providers shares the same settings, vault data, open/closed
+    // tree state and pending Undo.
     <SettingsProvider>
       <VaultProvider>
         <ExpandedCategoriesProvider>
-          <AppStack />
+          <DeleteUndoProvider>
+            <AppStack />
+          </DeleteUndoProvider>
         </ExpandedCategoriesProvider>
       </VaultProvider>
     </SettingsProvider>
@@ -64,6 +68,10 @@ function AppStack() {
         <Stack.Screen
           name="category-form"
           options={{ title: t.categoryForm.title, presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="delete-category"
+          options={{ title: t.deleteCategory.title, presentation: "modal" }}
         />
         <Stack.Screen name="settings" options={{ title: t.settings.title }} />
       </Stack>

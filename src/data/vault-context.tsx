@@ -2,6 +2,7 @@ import { randomUUID } from "expo-crypto";
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { mockCategories, mockCredentials } from "@/data/mock-vault";
+import type { CategoryDeletion } from "@/features/categories/category-mutations";
 import type { Category, Credential } from "@/types/vault";
 
 import {
@@ -16,6 +17,8 @@ type VaultContextValue = {
   credentials: Credential[];
   createCategory: (name: string, parentId: string | null) => CreateCategoryResult;
   renameCategory: (id: string, name: string) => RenameCategoryResult;
+  deleteCategory: (id: string) => CategoryDeletion;
+  restoreDeletion: (deletion: CategoryDeletion) => void;
 };
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -32,7 +35,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   // A copy of the repository's data in React state. Updating it makes the screens re-render.
   const [categories, setCategories] = useState(() => repository.getCategories());
-  const [credentials] = useState(() => repository.getCredentials());
+  const [credentials, setCredentials] = useState(() => repository.getCredentials());
 
   // Both functions return the repository's result, so the screen can show a validation error.
   // A rejected name changes nothing, but setCategories then gets the same array and React skips the re-render.
@@ -48,8 +51,31 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     return result;
   }
 
+  // Deleting and restoring change credentials too, so both copies are refreshed.
+  function deleteCategory(id: string): CategoryDeletion {
+    const deletion = repository.deleteCategory(id);
+    setCategories(repository.getCategories());
+    setCredentials(repository.getCredentials());
+    return deletion;
+  }
+
+  function restoreDeletion(deletion: CategoryDeletion) {
+    repository.restoreDeletion(deletion);
+    setCategories(repository.getCategories());
+    setCredentials(repository.getCredentials());
+  }
+
   return (
-    <VaultContext value={{ categories, credentials, createCategory, renameCategory }}>
+    <VaultContext
+      value={{
+        categories,
+        credentials,
+        createCategory,
+        renameCategory,
+        deleteCategory,
+        restoreDeletion,
+      }}
+    >
       {children}
     </VaultContext>
   );

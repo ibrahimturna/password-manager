@@ -7,6 +7,7 @@ import {
   getChildCategories,
   getCredentialsInCategory,
   getDescendantIds,
+  getSubtreeRows,
   getVisibleRows,
   toggleExpanded,
   type TreeRow,
@@ -304,5 +305,57 @@ describe("expandWithParents", () => {
 
     expect(result).not.toBe(original);
     expect(original.size).toBe(0);
+  });
+});
+
+describe("getSubtreeRows", () => {
+  // Turns rows into short labels, so failures are easy to read.
+  function labels(rows: TreeRow[]): string[] {
+    return rows.map((row) => {
+      switch (row.kind) {
+        case "category":
+          return `${row.depth}:category:${row.category.id}`;
+        case "credential":
+          return `${row.depth}:credential:${row.credential.id}`;
+        case "empty":
+          return `${row.depth}:empty:${row.parentId}`;
+      }
+    });
+  }
+
+  it("shows the category at depth 0 with everything inside it expanded", () => {
+    const rows = getSubtreeRows(testCategories, testCredentials, "banks");
+
+    expect(labels(rows)).toEqual([
+      "0:category:banks",
+      "1:category:investments",
+      "2:category:stocks",
+      "3:credential:broker-login",
+      "1:category:banks-other",
+      "2:empty:banks-other",
+      "1:credential:bank-login",
+      "1:credential:second-bank-login",
+    ]);
+  });
+
+  it("starts from a nested category without showing its parents or siblings", () => {
+    const rows = getSubtreeRows(testCategories, testCredentials, "investments");
+
+    expect(labels(rows)).toEqual([
+      "0:category:investments",
+      "1:category:stocks",
+      "2:credential:broker-login",
+    ]);
+  });
+
+  it("shows an empty category with an empty row", () => {
+    expect(labels(getSubtreeRows(testCategories, testCredentials, "empty"))).toEqual([
+      "0:category:empty",
+      "1:empty:empty",
+    ]);
+  });
+
+  it("returns no rows for a missing category", () => {
+    expect(getSubtreeRows(testCategories, testCredentials, "missing")).toEqual([]);
   });
 });
