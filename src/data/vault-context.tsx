@@ -4,14 +4,18 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { mockCategories, mockCredentials } from "@/data/mock-vault";
 import type { Category, Credential } from "@/types/vault";
 
-import { createInMemoryVaultRepository } from "./vault-repository";
+import {
+  createInMemoryVaultRepository,
+  type CreateCategoryResult,
+  type RenameCategoryResult,
+} from "./vault-repository";
 
 // What every screen inside <VaultProvider> can read and call.
 type VaultContextValue = {
   categories: Category[];
   credentials: Credential[];
-  createCategory: (name: string, parentId: string | null) => Category;
-  renameCategory: (id: string, name: string) => void;
+  createCategory: (name: string, parentId: string | null) => CreateCategoryResult;
+  renameCategory: (id: string, name: string) => RenameCategoryResult;
 };
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -30,15 +34,18 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState(() => repository.getCategories());
   const [credentials] = useState(() => repository.getCredentials());
 
-  function createCategory(name: string, parentId: string | null): Category {
-    const category = repository.createCategory(name, parentId);
+  // Both functions return the repository's result, so the screen can show a validation error.
+  // A rejected name changes nothing, but setCategories then gets the same array and React skips the re-render.
+  function createCategory(name: string, parentId: string | null): CreateCategoryResult {
+    const result = repository.createCategory(name, parentId);
     setCategories(repository.getCategories());
-    return category;
+    return result;
   }
 
-  function renameCategory(id: string, name: string) {
-    repository.renameCategory(id, name);
+  function renameCategory(id: string, name: string): RenameCategoryResult {
+    const result = repository.renameCategory(id, name);
     setCategories(repository.getCategories());
+    return result;
   }
 
   return (

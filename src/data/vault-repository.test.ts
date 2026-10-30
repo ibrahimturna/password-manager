@@ -31,34 +31,84 @@ describe("createInMemoryVaultRepository", () => {
     expect(repository.getCredentials()).toEqual([]);
   });
 
-  it("creates a category with a generated id and returns it", () => {
-    const repository = makeRepository();
+  describe("createCategory", () => {
+    it("creates a category with a generated id and returns it", () => {
+      const repository = makeRepository();
 
-    const created = repository.createCategory("Investments", "banks");
+      const result = repository.createCategory("Investments", "banks");
 
-    expect(created).toEqual({ id: "new-1", name: "Investments", parentId: "banks" });
-    expect(repository.getCategories()).toContainEqual(created);
+      const expected = { id: "new-1", name: "Investments", parentId: "banks" };
+      expect(result).toEqual({ ok: true, category: expected });
+      expect(repository.getCategories()).toContainEqual(expected);
+    });
+
+    it("stores the trimmed name", () => {
+      const repository = makeRepository();
+
+      repository.createCategory("  E-mail  ", null);
+
+      expect(repository.getCategories()).toContainEqual({
+        id: "new-1",
+        name: "E-mail",
+        parentId: null,
+      });
+    });
+
+    it("gives each new category a different id", () => {
+      const repository = makeRepository();
+
+      const first = repository.createCategory("E-mail", null);
+      const second = repository.createCategory("E-mail", "banks");
+
+      expect(first.ok && second.ok && first.category.id !== second.category.id).toBe(true);
+    });
+
+    it("rejects an invalid name and stores nothing", () => {
+      const repository = makeRepository();
+      const before = repository.getCategories();
+
+      const result = repository.createCategory("banks", null);
+
+      expect(result).toEqual({ ok: false, error: "duplicate" });
+      expect(repository.getCategories()).toBe(before);
+    });
+
+    it("throws when the parent does not exist", () => {
+      const repository = makeRepository();
+
+      expect(() => repository.createCategory("Anything", "missing")).toThrow();
+    });
   });
 
-  it("gives each new category a different id", () => {
-    const repository = makeRepository();
+  describe("renameCategory", () => {
+    it("renames and returns a new categories array", () => {
+      const repository = makeRepository();
+      const before = repository.getCategories();
 
-    const first = repository.createCategory("E-mail", null);
-    const second = repository.createCategory("E-mail", "banks");
+      const result = repository.renameCategory("banks", "  Bank Accounts ");
+      const after = repository.getCategories();
 
-    expect(first.id).not.toBe(second.id);
-  });
+      expect(result).toEqual({ ok: true });
+      // A new array is what lets React notice the change.
+      expect(after).not.toBe(before);
+      expect(after[0].name).toBe("Bank Accounts");
+    });
 
-  it("returns a new categories array after a change", () => {
-    const repository = makeRepository();
-    const before = repository.getCategories();
+    it("rejects an invalid name and changes nothing", () => {
+      const repository = makeRepository();
+      const before = repository.getCategories();
 
-    repository.renameCategory("banks", "Bank Accounts");
-    const after = repository.getCategories();
+      const result = repository.renameCategory("banks", "   ");
 
-    // A new array is what lets React notice the change.
-    expect(after).not.toBe(before);
-    expect(after[0].name).toBe("Bank Accounts");
+      expect(result).toEqual({ ok: false, error: "empty" });
+      expect(repository.getCategories()).toBe(before);
+    });
+
+    it("throws when the category does not exist", () => {
+      const repository = makeRepository();
+
+      expect(() => repository.renameCategory("missing", "Anything")).toThrow();
+    });
   });
 
   it("does not change the seed data", () => {

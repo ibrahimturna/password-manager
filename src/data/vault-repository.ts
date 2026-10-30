@@ -1,5 +1,13 @@
 import { addCategory, renameCategory } from "@/features/categories/category-mutations";
+import { type CategoryNameError, validateCategoryName } from "@/features/categories/category-name";
+import { getCategoryById } from "@/features/categories/category-tree";
 import type { Category, Credential } from "@/types/vault";
+
+export type CreateCategoryResult =
+  | { ok: true; category: Category }
+  | { ok: false; error: CategoryNameError };
+
+export type RenameCategoryResult = { ok: true } | { ok: false; error: CategoryNameError };
 
 // The only way the app reads or changes vault data.
 // Screens depend on this type, not on where the data is stored, so the in-memory
@@ -7,9 +15,9 @@ import type { Category, Credential } from "@/types/vault";
 export type VaultRepository = {
   getCategories(): Category[];
   getCredentials(): Credential[];
-  // Returns the new category, so the caller knows its id.
-  createCategory(name: string, parentId: string | null): Category;
-  renameCategory(id: string, name: string): void;
+  // On success, returns the new category so the caller knows its id.
+  createCategory(name: string, parentId: string | null): CreateCategoryResult;
+  renameCategory(id: string, name: string): RenameCategoryResult;
 };
 
 type VaultSeed = {
@@ -30,13 +38,36 @@ export function createInMemoryVaultRepository(
   return {
     getCategories: () => categories,
     getCredentials: () => credentials,
+
     createCategory(name, parentId) {
-      const category: Category = { id: generateId(), name, parentId };
+      // A missing parent is a bug in the app, not a user mistake, so it throws.
+      if (parentId !== null && getCategoryById(categories, parentId) === undefined) {
+        throw new Error(`Cannot create a category: parent "${parentId}" does not exist.`);
+      }
+
+      const validation = validateCategoryName(categories, name, parentId, null);
+      if (!validation.ok) {
+        return validation;
+      }
+
+      const category: Category = { id: generateId(), name: validation.name, parentId };
       categories = addCategory(categories, category.id, category.name, category.parentId);
-      return category;
+      return { ok: true, category };
     },
+
     renameCategory(id, name) {
-      categories = renameCategory(categories, id, name);
+      const category = getCategoryById(categories, id);
+      if (category === undefined) {
+        throw new Error(`Cannot rename: category "${id}" does not exist.`);
+      }
+
+      const validation = validateCategoryName(categories, name, category.parentId, id);
+      if (!validation.ok) {
+        return validation;
+      }
+
+      categories = renameCategory(categories, id, validation.name);
+      return { ok: true };
     },
   };
 }
