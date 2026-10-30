@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useVault } from "@/data/vault-context";
+import { useTranslation } from "@/i18n/use-translation";
 import type { Category, Credential } from "@/types/vault";
 
 import { getVisibleRows, type TreeRow } from "./category-tree";
@@ -26,6 +27,7 @@ export function CategoryTreeList({
   onAddSubcategory,
   onRenameCategory,
 }: CategoryTreeListProps) {
+  const t = useTranslation();
   const { categories, credentials } = useVault();
   const rows = getVisibleRows(categories, credentials, expandedIds);
   // The category whose "⋯" actions are open. Only one at a time.
@@ -71,12 +73,12 @@ export function CategoryTreeList({
           case "empty":
             return (
               <Text style={[styles.emptyText, { paddingLeft: item.depth * INDENT_PER_LEVEL }]}>
-                Empty
+                {t.tree.empty}
               </Text>
             );
         }
       }}
-      ListEmptyComponent={<Text style={styles.emptyText}>No categories yet.</Text>}
+      ListEmptyComponent={<Text style={styles.emptyText}>{t.tree.noCategories}</Text>}
     />
   );
 }
@@ -113,6 +115,7 @@ function CategoryRow({
   onAddSubcategory,
   onRename,
 }: CategoryRowProps) {
+  const t = useTranslation();
   const indent = { paddingLeft: depth * INDENT_PER_LEVEL };
 
   return (
@@ -133,7 +136,7 @@ function CategoryRow({
           hitSlop={8}
           style={styles.menuButton}
           accessibilityRole="button"
-          accessibilityLabel={`Actions for ${category.name}`}
+          accessibilityLabel={t.tree.actionsFor(category.name)}
           accessibilityState={{ expanded: isMenuOpen }}
         >
           <Text style={styles.menuButtonText}>⋯</Text>
@@ -142,8 +145,8 @@ function CategoryRow({
 
       {isMenuOpen && (
         <View style={[styles.menu, indent]}>
-          <MenuAction label="➕ Add subcategory" onPress={onAddSubcategory} />
-          <MenuAction label="✏️ Rename" onPress={onRename} />
+          <MenuAction label={`➕ ${t.tree.addSubcategory}`} onPress={onAddSubcategory} />
+          <MenuAction label={`✏️ ${t.tree.rename}`} onPress={onRename} />
         </View>
       )}
     </View>
@@ -160,10 +163,12 @@ function MenuAction({ label, onPress }: { label: string; onPress: () => void }) 
 
 // Shows title and username only. The password is never rendered in the tree.
 function CredentialRow({ credential, depth }: { credential: Credential; depth: number }) {
+  const t = useTranslation();
+
   return (
     <View style={[styles.row, styles.credentialRow, { paddingLeft: depth * INDENT_PER_LEVEL }]}>
       <Text style={styles.rowTitle}>🔑 {credential.title}</Text>
-      <Text style={styles.rowSubtitle}>{credential.username ?? "No username"}</Text>
+      <Text style={styles.rowSubtitle}>{credential.username ?? t.tree.noUsername}</Text>
     </View>
   );
 }

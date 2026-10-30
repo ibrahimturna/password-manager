@@ -15,6 +15,8 @@ import {
   getVisibleRows,
 } from "@/features/categories/category-tree";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
+import { useTranslation } from "@/i18n/use-translation";
+import type { Translations } from "@/i18n/en";
 import type { Category } from "@/types/vault";
 
 type Mode = "create" | "rename";
@@ -25,6 +27,7 @@ const INDENT_PER_LEVEL = 20;
 // Opened with no params from the round "+" button (new top-level category),
 // or from a row's "⋯" actions with `mode` and `categoryId` filled in.
 export default function CategoryFormScreen() {
+  const t = useTranslation();
   const params = useLocalSearchParams<{ mode?: string; categoryId?: string }>();
   const { categories, createCategory, renameCategory } = useVault();
   const { expandWithParents } = useExpandedCategories();
@@ -100,21 +103,21 @@ export default function CategoryFormScreen() {
     <View style={styles.form}>
       <SegmentedControl
         options={[
-          { value: "create", label: "New category" },
-          { value: "rename", label: "Rename" },
+          { value: "create", label: t.categoryForm.newCategory },
+          { value: "rename", label: t.categoryForm.rename },
         ]}
         value={mode}
         onChange={changeMode}
       />
 
-      <Text style={styles.label}>{mode === "create" ? "Create inside" : "Category to rename"}</Text>
+      <Text style={styles.label}>{mode === "create" ? t.categoryForm.createInside : t.categoryForm.categoryToRename}</Text>
       <Text style={styles.selection}>
         {mode === "create"
-          ? (selectedPath ?? "Top level")
-          : (selectedPath ?? "Choose a category from the list below")}
+          ? (selectedPath ?? t.categoryForm.topLevel)
+          : (selectedPath ?? t.categoryForm.chooseCategoryBelow)}
       </Text>
 
-      <Text style={styles.label}>{mode === "create" ? "Name" : "New name"}</Text>
+      <Text style={styles.label}>{mode === "create" ? t.categoryForm.name : t.categoryForm.newName}</Text>
       <TextInput
         value={name}
         onChangeText={(text) => {
@@ -126,15 +129,15 @@ export default function CategoryFormScreen() {
         // Open the keyboard straight away only when a row's "⋯" action chose the category.
         autoFocus={initialCategory !== undefined}
         returnKeyType="done"
-        placeholder="e.g. Kredi Kartları"
+        placeholder={t.categoryForm.namePlaceholder}
         style={[styles.input, !canSave && styles.inputDisabled]}
-        accessibilityLabel={mode === "create" ? "Name" : "New name"}
+        accessibilityLabel={mode === "create" ? t.categoryForm.name : t.categoryForm.newName}
       />
-      {error !== null && <Text style={styles.error}>{getErrorMessage(error)}</Text>}
+      {error !== null && <Text style={styles.error}>{getErrorMessage(error, t)}</Text>}
 
       <View style={styles.buttons}>
         <Pressable onPress={() => router.back()} style={styles.button} accessibilityRole="button">
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={styles.cancelText}>{t.categoryForm.cancel}</Text>
         </Pressable>
         <Pressable
           onPress={save}
@@ -142,16 +145,16 @@ export default function CategoryFormScreen() {
           style={[styles.button, styles.saveButton, !canSave && styles.saveButtonDisabled]}
           accessibilityRole="button"
         >
-          <Text style={styles.saveText}>Save</Text>
+          <Text style={styles.saveText}>{t.categoryForm.save}</Text>
         </Pressable>
       </View>
 
       <Text style={styles.label}>
-        {mode === "create" ? "Choose where to create it" : "Choose a category"}
+        {mode === "create" ? t.categoryForm.chooseWhereToCreate : t.categoryForm.chooseCategory}
       </Text>
       {mode === "create" && (
         <PickerRow
-          label="🏠 Top level"
+          label={`🏠 ${t.categoryForm.topLevel}`}
           depth={0}
           isSelected={selectedId === null}
           onPress={() => selectCategory(null)}
@@ -180,15 +183,15 @@ export default function CategoryFormScreen() {
   );
 }
 
-// Turns an error code into text for the user. Translations come in the languages milestone.
-function getErrorMessage(error: CategoryNameError): string {
+// Turns an error code into text for the user, in the current language.
+function getErrorMessage(error: CategoryNameError, t: Translations): string {
   switch (error) {
     case "empty":
-      return "Name is required.";
+      return t.categoryForm.errors.empty;
     case "too-long":
-      return `Name can be at most ${MAX_CATEGORY_NAME_LENGTH} characters.`;
+      return t.categoryForm.errors.tooLong(MAX_CATEGORY_NAME_LENGTH);
     case "duplicate":
-      return "A category with this name already exists here.";
+      return t.categoryForm.errors.duplicate;
   }
 }
 

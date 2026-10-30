@@ -2,18 +2,20 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { SegmentedControl } from "@/components/segmented-control";
 import { useSettings } from "@/features/settings/settings-context";
+import { useTranslation } from "@/i18n/use-translation";
 
 export default function SettingsScreen() {
   const { language, theme, setLanguage, setTheme } = useSettings();
+  const t = useTranslation();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Language</Text>
+        <Text style={styles.sectionTitle}>{t.settings.language}</Text>
         <SegmentedControl
           options={[
-            { value: "device", label: "Device" },
-            // Language names are always written in their own language.
+            { value: "device", label: t.settings.device },
+            // Language names are always written in their own language, so they are not translated.
             { value: "tr", label: "Türkçe" },
             { value: "en", label: "English" },
           ]}
@@ -23,21 +25,19 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Theme</Text>
+        <Text style={styles.sectionTitle}>{t.settings.theme}</Text>
         <SegmentedControl
           options={[
-            { value: "device", label: "Device" },
-            { value: "light", label: "Light" },
-            { value: "dark", label: "Dark" },
+            { value: "device", label: t.settings.device },
+            { value: "light", label: t.settings.light },
+            { value: "dark", label: t.settings.dark },
           ]}
           value={theme}
           onChange={setTheme}
         />
       </View>
 
-      <Text style={styles.note}>
-        Settings are not saved yet and reset to “Device” when the app restarts.
-      </Text>
+      <Text style={styles.note}>{t.settings.notSavedNote}</Text>
     </ScrollView>
   );
 }

@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
+import { useTranslation } from "@/i18n/use-translation";
 
 export default function HomeScreen() {
+  const t = useTranslation();
   const { expandedIds, toggleCategory, collapseAll } = useExpandedCategories();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
@@ -14,9 +16,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.notice}>
-        Mock data only — do not enter real passwords.
-      </Text>
+      <Text style={styles.notice}>{t.home.mockNotice}</Text>
 
       <Pressable
         onPress={collapseAll}
@@ -25,7 +25,7 @@ export default function HomeScreen() {
         accessibilityRole="button"
       >
         <Text style={[styles.collapseText, !hasExpanded && styles.disabledText]}>
-          Collapse all
+          {t.home.collapseAll}
         </Text>
       </Pressable>
 
@@ -44,7 +44,7 @@ export default function HomeScreen() {
         onPress={() => router.push("/category-form")}
         style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
         accessibilityRole="button"
-        accessibilityLabel="New category or rename"
+        accessibilityLabel={t.home.newCategoryButton}
       >
         <Text style={styles.floatingButtonText}>+</Text>
       </Pressable>
