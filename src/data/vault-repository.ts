@@ -54,9 +54,12 @@ export type VaultRepository = {
   // Returns what was removed, so the delete can be undone with restoreCredentials.
   deleteCredential(id: string): CredentialDeletion;
   restoreCredentials(deletion: CredentialDeletion): void;
+
+  // Replaces the whole vault. Used by "Reset to sample data" until Milestone 7.
+  replaceAll(contents: VaultContents): void;
 };
 
-type VaultSeed = {
+export type VaultContents = {
   folders: Folder[];
   credentials: Credential[];
 };
@@ -65,7 +68,7 @@ type VaultSeed = {
 // `generateId` makes ids for new items and `now` tells the current time (milliseconds).
 // The app passes a UUID generator and Date.now; tests pass predictable ones.
 export function createInMemoryVaultRepository(
-  seed: VaultSeed,
+  seed: VaultContents,
   generateId: () => string,
   now: () => number,
 ): VaultRepository {
@@ -171,6 +174,11 @@ export function createInMemoryVaultRepository(
       const result = deleteCredential(credentials, id);
       credentials = result.credentials;
       return result.removed;
+    },
+
+    replaceAll(contents) {
+      folders = contents.folders;
+      credentials = contents.credentials;
     },
 
     restoreCredentials(deletion) {

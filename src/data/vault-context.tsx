@@ -1,17 +1,22 @@
 import { randomUUID } from "expo-crypto";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-import { mockFolders, mockCredentials } from "@/data/mock-vault";
+import { mockCredentials, mockFolders } from "@/data/mock-vault";
 import type { FolderDeletion } from "@/features/folders/folder-mutations";
 import type { CredentialInput } from "@/features/credentials/credential-validation";
+import { useTranslation } from "@/i18n/use-translation";
+import { useTheme } from "@/theme/use-theme";
 import type { Credential, Folder } from "@/types/vault";
 
-import {
-  createInMemoryVaultRepository,
-  type CreateFolderResult,
-  type CredentialDeletion,
-  type RenameFolderResult,
-  type SaveCredentialResult,
+import { createSqliteVaultRepository } from "./sqlite-vault-repository";
+import { openVaultDatabase } from "./vault-database";
+import type {
+  CreateFolderResult,
+  CredentialDeletion,
+  RenameFolderResult,
+  SaveCredentialResult,
+  VaultRepository,
 } from "./vault-repository";
 
 // What every screen inside <VaultProvider> can read and call.
@@ -26,21 +31,51 @@ type VaultContextValue = {
   updateCredential: (id: string, input: CredentialInput) => SaveCredentialResult;
   deleteCredential: (id: string) => CredentialDeletion;
   restoreCredentials: (deletion: CredentialDeletion) => void;
+  resetToSampleData: () => void;
 };
 
 const VaultContext = createContext<VaultContextValue | null>(null);
 
-// Owns the vault data for the whole app and shares it with every screen below it.
+// Opens the encrypted vault when the app starts. The screens appear once it is open.
 export function VaultProvider({ children }: { children: ReactNode }) {
-  // Passing a function to useState runs it only once, so the repository is created once.
-  const [repository] = useState(() =>
-    createInMemoryVaultRepository(
-      { folders: mockFolders, credentials: mockCredentials },
-      randomUUID,
-      Date.now,
-    ),
-  );
+  const t = useTranslation();
+  const { colors } = useTheme();
+  const [repository, setRepository] = useState<VaultRepository | null>(null);
+  const [failed, setFailed] = useState(false);
 
+  useEffect(() => {
+    openVaultDatabase()
+      .then((db) => setRepository(createSqliteVaultRepository(db, randomUUID, Date.now)))
+      .catch((error: unknown) => {
+        // Never fall back to an unprotected vault; show an error instead.
+        console.error(error);
+        setFailed(true);
+      });
+  }, []);
+
+  if (repository !== null) {
+    return <LoadedVaultProvider repository={repository}>{children}</LoadedVaultProvider>;
+  }
+
+  return (
+    <View style={[styles.startup, { backgroundColor: colors.surface }]}>
+      {failed ? (
+        <Text style={{ color: colors.error }}>{t.vault.openFailed}</Text>
+      ) : (
+        <ActivityIndicator color={colors.primary} size="large" />
+      )}
+    </View>
+  );
+}
+
+// Owns the vault data for the whole app and shares it with every screen below it.
+function LoadedVaultProvider({
+  repository,
+  children,
+}: {
+  repository: VaultRepository;
+  children: ReactNode;
+}) {
   // A copy of the repository's data in React state. Updating it makes the screens re-render.
   const [folders, setFolders] = useState(() => repository.getFolders());
   const [credentials, setCredentials] = useState(() => repository.getCredentials());
@@ -97,6 +132,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setCredentials(repository.getCredentials());
   }
 
+  function resetToSampleData() {
+    repository.replaceAll({ folders: mockFolders, credentials: mockCredentials });
+    setFolders(repository.getFolders());
+    setCredentials(repository.getCredentials());
+  }
+
   return (
     <VaultContext
       value={{
@@ -110,6 +151,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         updateCredential,
         deleteCredential,
         restoreCredentials,
+        resetToSampleData,
       }}
     >
       {children}
@@ -125,3 +167,12 @@ export function useVault(): VaultContextValue {
   }
   return vault;
 }
+
+const styles = StyleSheet.create({
+  startup: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+});

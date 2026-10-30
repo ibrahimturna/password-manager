@@ -1,6 +1,11 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { SegmentedControl } from "@/components/segmented-control";
+import { useVault } from "@/data/vault-context";
+import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
 import { useSettings } from "@/features/settings/settings-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
@@ -10,6 +15,17 @@ export default function SettingsScreen() {
   const { language, theme, setLanguage, setTheme } = useSettings();
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
+  const { resetToSampleData } = useVault();
+  const { collapseAll } = useExpandedFolders();
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+
+  // For testing only; this goes away with the real vault in Milestone 7.
+  function confirmReset() {
+    setIsResetDialogOpen(false);
+    resetToSampleData();
+    collapseAll();
+    router.back();
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -40,8 +56,25 @@ export default function SettingsScreen() {
         />
       </View>
 
-      <Text style={styles.note}>{t.settings.notSavedNote}</Text>
       <Text style={styles.note}>{t.settings.mockNotice}</Text>
+
+      <Pressable
+        onPress={() => setIsResetDialogOpen(true)}
+        style={styles.resetButton}
+        accessibilityRole="button"
+      >
+        <Text style={styles.resetText}>{t.settings.resetSampleData}</Text>
+      </Pressable>
+
+      <ConfirmDialog
+        visible={isResetDialogOpen}
+        title={t.settings.resetTitle}
+        message={t.settings.resetMessage}
+        cancelLabel={t.settings.resetCancel}
+        confirmLabel={t.settings.resetConfirm}
+        onCancel={() => setIsResetDialogOpen(false)}
+        onConfirm={confirmReset}
+      />
     </ScrollView>
   );
 }
@@ -62,6 +95,14 @@ function createStyles(colors: Palette) {
     },
     note: {
       color: colors.onSurfaceVariant,
+    },
+    resetButton: {
+      alignSelf: "flex-start",
+      paddingVertical: 8,
+    },
+    resetText: {
+      fontSize: 16,
+      color: colors.error,
     },
   });
 }

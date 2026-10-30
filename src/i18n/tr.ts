@@ -90,6 +90,9 @@ export const tr: Translations = {
     deleted: (title: string) => `“${title}” silindi`,
     undo: "Geri al",
   },
+  vault: {
+    openFailed: "Kasa açılamadı. Şifreleme gerekli olduğundan uygulama Expo Go yerine kendi sürümünde çalışmalıdır.",
+  },
   settings: {
     title: "Ayarlar",
     language: "Dil",
@@ -97,8 +100,11 @@ export const tr: Translations = {
     device: "Cihaz",
     light: "Açık",
     dark: "Koyu",
-    notSavedNote:
-      "Ayarlar henüz kaydedilmiyor; uygulama yeniden başlatıldığında “Cihaz” seçeneğine döner.",
-    mockNotice: "Yalnızca örnek veri — gerçek şifre girmeyin.",
+    mockNotice: "Yalnızca test verisi — henüz gerçek şifre girmeyin.",
+    resetSampleData: "Örnek verilere sıfırla",
+    resetTitle: "Örnek verilere sıfırla",
+    resetMessage: "Tüm klasörler ve şifreler örnek verilerle değiştirilecek.",
+    resetCancel: "İptal",
+    resetConfirm: "Sıfırla",
   },
 };

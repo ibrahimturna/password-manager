@@ -89,6 +89,9 @@ export const en = {
     deleted: (title: string) => `“${title}” deleted`,
     undo: "Undo",
   },
+  vault: {
+    openFailed: "The vault could not be opened. Encryption is required, so this app must run in its own build, not Expo Go.",
+  },
   settings: {
     title: "Settings",
     language: "Language",
@@ -96,8 +99,12 @@ export const en = {
     device: "Device",
     light: "Light",
     dark: "Dark",
-    notSavedNote: "Settings are not saved yet and reset to “Device” when the app restarts.",
-    mockNotice: "Mock data only — do not enter real passwords.",
+    mockNotice: "Test data only — do not enter real passwords yet.",
+    resetSampleData: "Reset to sample data",
+    resetTitle: "Reset to sample data",
+    resetMessage: "All folders and passwords will be replaced with the sample data.",
+    resetCancel: "Cancel",
+    resetConfirm: "Reset",
   },
 };
 
