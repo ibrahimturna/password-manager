@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { Icon } from "@/components/icon";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
@@ -22,7 +23,8 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
 }: SegmentedControlProps<T>) {
-  const styles = createStyles(useTheme().colors);
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.container} accessibilityRole="radiogroup">
@@ -40,9 +42,8 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="radio"
             accessibilityState={{ selected: isSelected }}
           >
-            <Text style={[styles.label, isSelected && styles.labelSelected]}>
-              {isSelected ? `✓ ${option.label}` : option.label}
-            </Text>
+            {isSelected && <Icon name="check" color={colors.onSecondaryContainer} size={18} />}
+            <Text style={[styles.label, isSelected && styles.labelSelected]}>{option.label}</Text>
           </Pressable>
         );
       })}
@@ -62,8 +63,11 @@ function createStyles(colors: Palette) {
     },
     segment: {
       flex: 1,
-      paddingVertical: 10,
+      flexDirection: "row",
+      justifyContent: "center",
       alignItems: "center",
+      gap: 4,
+      paddingVertical: 10,
     },
     segmentDivider: {
       borderLeftWidth: 1,

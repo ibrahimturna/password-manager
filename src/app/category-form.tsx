@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Icon, type IconName } from "@/components/icon";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useVault } from "@/data/vault-context";
 import {
@@ -27,7 +28,7 @@ const INDENT_PER_LEVEL = 20;
 
 // Creates a category or renames one.
 // Opened with no params from the round "+" button (new top-level category),
-// or from a row's "⋯" actions with `mode` and `categoryId` filled in.
+// or from a row's "⋮" actions with `mode` and `categoryId` filled in.
 export default function CategoryFormScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
@@ -130,7 +131,7 @@ export default function CategoryFormScreen() {
         }}
         onSubmitEditing={save}
         editable={canSave}
-        // Open the keyboard straight away only when a row's "⋯" action chose the category.
+        // Open the keyboard straight away only when a row's "⋮" action chose the category.
         autoFocus={initialCategory !== undefined}
         returnKeyType="done"
         placeholder={canSave ? t.categoryForm.namePlaceholder : t.categoryForm.chooseCategoryFirst}
@@ -165,7 +166,8 @@ export default function CategoryFormScreen() {
       </Text>
       {mode === "create" && (
         <PickerRow
-          label={`🏠 ${t.categoryForm.topLevel}`}
+          icon="home"
+          label={t.categoryForm.topLevel}
           depth={0}
           isSelected={selectedId === null}
           onPress={() => selectCategory(null)}
@@ -184,7 +186,8 @@ export default function CategoryFormScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
       renderItem={({ item }) => (
         <PickerRow
-          label={`📁 ${item.category.name}`}
+          icon="folder"
+          label={item.category.name}
           depth={item.depth}
           isSelected={selectedId === item.category.id}
           onPress={() => selectCategory(item.category)}
@@ -206,10 +209,18 @@ function getErrorMessage(error: CategoryNameError, t: Translations): string {
   }
 }
 
-type PickerRowProps = { label: string; depth: number; isSelected: boolean; onPress: () => void };
+type PickerRowProps = {
+  icon: IconName;
+  label: string;
+  depth: number;
+  isSelected: boolean;
+  onPress: () => void;
+};
 
-function PickerRow({ label, depth, isSelected, onPress }: PickerRowProps) {
-  const styles = createStyles(useTheme().colors);
+function PickerRow({ icon, label, depth, isSelected, onPress }: PickerRowProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const contentColor = isSelected ? colors.onPrimaryContainer : colors.onSurfaceVariant;
 
   return (
     <Pressable
@@ -222,8 +233,9 @@ function PickerRow({ label, depth, isSelected, onPress }: PickerRowProps) {
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
     >
+      <Icon name={icon} color={contentColor} size={20} />
       <Text style={[styles.pickerText, isSelected && styles.pickerTextSelected]}>{label}</Text>
-      {isSelected && <Text style={styles.pickerCheck}>✓</Text>}
+      {isSelected && <Icon name="check" color={contentColor} size={20} />}
     </Pressable>
   );
 }
@@ -289,6 +301,7 @@ function createStyles(colors: Palette) {
     pickerRow: {
       flexDirection: "row",
       alignItems: "center",
+      gap: 8,
       paddingVertical: 12,
       paddingRight: 12,
       borderBottomWidth: StyleSheet.hairlineWidth,
@@ -305,10 +318,6 @@ function createStyles(colors: Palette) {
     pickerTextSelected: {
       color: colors.onPrimaryContainer,
       fontWeight: "600",
-    },
-    pickerCheck: {
-      fontSize: 16,
-      color: colors.onPrimaryContainer,
     },
   });
 }

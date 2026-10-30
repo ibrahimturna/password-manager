@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { Icon, type IconName } from "@/components/icon";
 import { useVault } from "@/data/vault-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
@@ -21,7 +22,7 @@ type CategoryTreeListProps = {
 };
 
 // Shows the whole vault as an expandable tree. Tapping a category expands or collapses it;
-// its "⋯" button opens a small list of actions under the row.
+// its "⋮" button opens a small list of actions under the row.
 // This component does not own the expanded state; the screen passes it in.
 export function CategoryTreeList({
   expandedIds,
@@ -33,7 +34,7 @@ export function CategoryTreeList({
   const styles = createStyles(useTheme().colors);
   const { categories, credentials } = useVault();
   const rows = getVisibleRows(categories, credentials, expandedIds);
-  // The category whose "⋯" actions are open. Only one at a time.
+  // The category whose "⋮" actions are open. Only one at a time.
   const [menuCategoryId, setMenuCategoryId] = useState<string | null>(null);
 
   function toggleMenu(categoryId: string) {
@@ -119,7 +120,8 @@ function CategoryRow({
   onRename,
 }: CategoryRowProps) {
   const t = useTranslation();
-  const styles = createStyles(useTheme().colors);
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const indent = { paddingLeft: depth * INDENT_PER_LEVEL };
 
   return (
@@ -131,9 +133,13 @@ function CategoryRow({
           accessibilityRole="button"
           accessibilityState={{ expanded: isExpanded }}
         >
-          <Text style={styles.rowTitle}>
-            {isExpanded ? "▾" : "▸"} 📁 {category.name}
-          </Text>
+          <Icon
+            name={isExpanded ? "expandMore" : "chevronRight"}
+            color={colors.onSurfaceVariant}
+            size={20}
+          />
+          <Icon name={isExpanded ? "folderOpen" : "folder"} color={colors.primary} />
+          <Text style={styles.rowTitle}>{category.name}</Text>
         </Pressable>
         <Pressable
           onPress={onPressMenu}
@@ -143,25 +149,29 @@ function CategoryRow({
           accessibilityLabel={t.tree.actionsFor(category.name)}
           accessibilityState={{ expanded: isMenuOpen }}
         >
-          <Text style={styles.menuButtonText}>⋯</Text>
+          <Icon name="moreActions" color={colors.onSurfaceVariant} />
         </Pressable>
       </View>
 
       {isMenuOpen && (
         <View style={[styles.menu, indent]}>
-          <MenuAction label={`➕ ${t.tree.addSubcategory}`} onPress={onAddSubcategory} />
-          <MenuAction label={`✏️ ${t.tree.rename}`} onPress={onRename} />
+          <MenuAction icon="newFolder" label={t.tree.addSubcategory} onPress={onAddSubcategory} />
+          <MenuAction icon="edit" label={t.tree.rename} onPress={onRename} />
         </View>
       )}
     </View>
   );
 }
 
-function MenuAction({ label, onPress }: { label: string; onPress: () => void }) {
-  const styles = createStyles(useTheme().colors);
+type MenuActionProps = { icon: IconName; label: string; onPress: () => void };
+
+function MenuAction({ icon, label, onPress }: MenuActionProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   return (
     <Pressable onPress={onPress} style={styles.menuAction} accessibilityRole="button">
+      <Icon name={icon} color={colors.primary} size={20} />
       <Text style={styles.menuActionText}>{label}</Text>
     </Pressable>
   );
@@ -170,12 +180,16 @@ function MenuAction({ label, onPress }: { label: string; onPress: () => void }) 
 // Shows title and username only. The password is never rendered in the tree.
 function CredentialRow({ credential, depth }: { credential: Credential; depth: number }) {
   const t = useTranslation();
-  const styles = createStyles(useTheme().colors);
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   return (
     <View style={[styles.row, styles.credentialRow, { paddingLeft: depth * INDENT_PER_LEVEL }]}>
-      <Text style={styles.rowTitle}>🔑 {credential.title}</Text>
-      <Text style={styles.rowSubtitle}>{credential.username ?? t.tree.noUsername}</Text>
+      <Icon name="key" color={colors.onSurfaceVariant} size={20} />
+      <View style={styles.credentialText}>
+        <Text style={styles.rowTitle}>{credential.title}</Text>
+        <Text style={styles.rowSubtitle}>{credential.username ?? t.tree.noUsername}</Text>
+      </View>
     </View>
   );
 }
@@ -192,21 +206,23 @@ function createStyles(colors: Palette) {
     },
     categoryName: {
       flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
       paddingVertical: 12,
     },
     menuButton: {
-      paddingHorizontal: 12,
+      paddingHorizontal: 8,
       paddingVertical: 8,
-    },
-    menuButtonText: {
-      fontSize: 22,
-      color: colors.onSurfaceVariant,
     },
     menu: {
       paddingBottom: 8,
       backgroundColor: colors.surfaceContainer,
     },
     menuAction: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
       paddingVertical: 10,
       paddingHorizontal: 24,
     },
@@ -215,9 +231,16 @@ function createStyles(colors: Palette) {
       color: colors.primary,
     },
     credentialRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
       paddingVertical: 12,
     },
+    credentialText: {
+      flex: 1,
+    },
     rowTitle: {
+      flexShrink: 1, // long names wrap instead of pushing the "⋮" button off screen
       fontSize: 18,
       color: colors.onSurface,
     },

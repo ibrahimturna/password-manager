@@ -10,7 +10,7 @@ export type Palette = {
   secondaryContainer: string; // calmer highlight: the selected option in a segmented control
   onSecondaryContainer: string;
   surface: string; // screen background
-  surfaceContainer: string; // raised areas, such as an open "⋯" menu
+  surfaceContainer: string; // raised areas, such as an open "⋮" menu
   onSurface: string; // normal text
   onSurfaceVariant: string; // less important text (hints, subtitles)
   outline: string; // borders that must be noticed (inputs, segmented control)

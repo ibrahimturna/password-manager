@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Icon } from "@/components/icon";
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 import { useTranslation } from "@/i18n/use-translation";
@@ -10,7 +11,8 @@ import { useTheme } from "@/theme/use-theme";
 
 export default function HomeScreen() {
   const t = useTranslation();
-  const styles = createStyles(useTheme().colors);
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { expandedIds, toggleCategory, collapseAll } = useExpandedCategories();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
@@ -27,6 +29,11 @@ export default function HomeScreen() {
         style={styles.collapseButton}
         accessibilityRole="button"
       >
+        <Icon
+          name="collapseAll"
+          color={hasExpanded ? colors.primary : colors.disabledContent}
+          size={20}
+        />
         <Text style={[styles.collapseText, !hasExpanded && styles.disabledText]}>
           {t.home.collapseAll}
         </Text>
@@ -49,7 +56,7 @@ export default function HomeScreen() {
         accessibilityRole="button"
         accessibilityLabel={t.home.newCategoryButton}
       >
-        <Text style={styles.floatingButtonText}>+</Text>
+        <Icon name="add" color={colors.onPrimaryContainer} size={28} />
       </Pressable>
     </View>
   );
@@ -68,6 +75,9 @@ function createStyles(colors: Palette) {
     },
     collapseButton: {
       alignSelf: "flex-end",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
       paddingVertical: 4,
     },
     collapseText: {
@@ -87,11 +97,6 @@ function createStyles(colors: Palette) {
       alignItems: "center",
       justifyContent: "center",
       elevation: 4, // Android shadow
-    },
-    floatingButtonText: {
-      color: colors.onPrimaryContainer,
-      fontSize: 30,
-      lineHeight: 32,
     },
   });
 }

@@ -1,11 +1,14 @@
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 
+import { Icon } from "@/components/icon";
 import { useTranslation } from "@/i18n/use-translation";
+import { useTheme } from "@/theme/use-theme";
 
-// The ⚙️ button in the home screen's header. Opens the settings screen.
+// The settings button in the home screen's header. Opens the settings screen.
 export function SettingsButton() {
   const t = useTranslation();
+  const { colors } = useTheme();
 
   return (
     <Pressable
@@ -15,7 +18,7 @@ export function SettingsButton() {
       accessibilityRole="button"
       accessibilityLabel={t.settings.title}
     >
-      <Text style={styles.icon}>⚙️</Text>
+      <Icon name="settings" color={colors.onSurfaceVariant} />
     </Pressable>
   );
 }
@@ -23,8 +26,5 @@ export function SettingsButton() {
 const styles = StyleSheet.create({
   button: {
     paddingHorizontal: 4,
-  },
-  icon: {
-    fontSize: 22,
   },
 });
