@@ -1,3 +1,4 @@
+import { randomUUID } from "expo-crypto";
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { mockCategories, mockCredentials } from "@/data/mock-vault";
@@ -9,6 +10,7 @@ import { createInMemoryVaultRepository } from "./vault-repository";
 type VaultContextValue = {
   categories: Category[];
   credentials: Credential[];
+  createCategory: (name: string, parentId: string | null) => Category;
   renameCategory: (id: string, name: string) => void;
 };
 
@@ -18,12 +20,21 @@ const VaultContext = createContext<VaultContextValue | null>(null);
 export function VaultProvider({ children }: { children: ReactNode }) {
   // Passing a function to useState runs it only once, so the repository is created once.
   const [repository] = useState(() =>
-    createInMemoryVaultRepository({ categories: mockCategories, credentials: mockCredentials }),
+    createInMemoryVaultRepository(
+      { categories: mockCategories, credentials: mockCredentials },
+      randomUUID,
+    ),
   );
 
   // A copy of the repository's data in React state. Updating it makes the screens re-render.
   const [categories, setCategories] = useState(() => repository.getCategories());
   const [credentials] = useState(() => repository.getCredentials());
+
+  function createCategory(name: string, parentId: string | null): Category {
+    const category = repository.createCategory(name, parentId);
+    setCategories(repository.getCategories());
+    return category;
+  }
 
   function renameCategory(id: string, name: string) {
     repository.renameCategory(id, name);
@@ -31,7 +42,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <VaultContext value={{ categories, credentials, renameCategory }}>
+    <VaultContext value={{ categories, credentials, createCategory, renameCategory }}>
       {children}
     </VaultContext>
   );

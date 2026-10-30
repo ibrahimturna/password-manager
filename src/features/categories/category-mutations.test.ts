@@ -1,12 +1,34 @@
 import type { Category } from "@/types/vault";
 
-import { renameCategory } from "./category-mutations";
+import { addCategory, renameCategory } from "./category-mutations";
 
 const testCategories: Category[] = [
   { id: "banks", name: "Banks", parentId: null },
   { id: "investments", name: "Investments", parentId: "banks" },
   { id: "social", name: "Social", parentId: null },
 ];
+
+describe("addCategory", () => {
+  it("adds a top-level category at the end", () => {
+    const result = addCategory(testCategories, "email", "E-mail", null);
+
+    expect(result).toHaveLength(4);
+    expect(result[3]).toEqual({ id: "email", name: "E-mail", parentId: null });
+  });
+
+  it("adds a subcategory under the given parent", () => {
+    const result = addCategory(testCategories, "stocks", "Stocks", "investments");
+
+    expect(result[3]).toEqual({ id: "stocks", name: "Stocks", parentId: "investments" });
+  });
+
+  it("returns a new array and does not change the original", () => {
+    const result = addCategory(testCategories, "email", "E-mail", null);
+
+    expect(result).not.toBe(testCategories);
+    expect(testCategories).toHaveLength(3);
+  });
+});
 
 describe("renameCategory", () => {
   it("changes the name of the matching category only", () => {
