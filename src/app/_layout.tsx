@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { VaultProvider } from "@/data/vault-context";
 import { ExpandedFoldersProvider } from "@/features/folders/expanded-folders-context";
 import { useRestoreRoutes } from "@/features/lock/use-kept-state";
+import { ScreenCaptureGuard } from "@/features/settings/screen-capture-guard";
 import { SettingsButton } from "@/features/settings/settings-button";
 import { SettingsProvider } from "@/features/settings/settings-context";
 import { UndoProvider } from "@/features/undo/undo-context";
@@ -17,13 +18,15 @@ export default function RootLayout() {
     // Every screen inside the providers shares the same settings, vault data, open/closed
     // tree state and pending Undo.
     <SettingsProvider>
-      <ExpandedFoldersProvider>
-        <VaultProvider>
-          <UndoProvider>
-            <AppStack />
-          </UndoProvider>
-        </VaultProvider>
-      </ExpandedFoldersProvider>
+      <ScreenCaptureGuard>
+        <ExpandedFoldersProvider>
+          <VaultProvider>
+            <UndoProvider>
+              <AppStack />
+            </UndoProvider>
+          </VaultProvider>
+        </ExpandedFoldersProvider>
+      </ScreenCaptureGuard>
     </SettingsProvider>
   );
 }

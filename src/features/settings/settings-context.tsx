@@ -10,18 +10,23 @@ const LANGUAGE_SETTINGS = ["device", "tr", "en"] as const;
 const THEME_SETTINGS = ["device", "light", "dark"] as const;
 export type LanguageSetting = (typeof LANGUAGE_SETTINGS)[number];
 export type ThemeSetting = (typeof THEME_SETTINGS)[number];
+const SCREEN_CAPTURE_SETTINGS = ["blocked", "allowed"] as const;
+export type ScreenCaptureSetting = (typeof SCREEN_CAPTURE_SETTINGS)[number];
 
 const LANGUAGE_KEY = "settings.language";
 const THEME_KEY = "settings.theme";
 const AUTO_LOCK_KEY = "settings.autoLock";
+const SCREEN_CAPTURE_KEY = "settings.screenCapture";
 
 type SettingsValue = {
   language: LanguageSetting;
   theme: ThemeSetting;
   autoLock: AutoLockSetting;
+  screenCapture: ScreenCaptureSetting;
   setLanguage: (language: LanguageSetting) => void;
   setTheme: (theme: ThemeSetting) => void;
   setAutoLock: (autoLock: AutoLockSetting) => void;
+  setScreenCapture: (screenCapture: ScreenCaptureSetting) => void;
 };
 
 const SettingsContext = createContext<SettingsValue | null>(null);
@@ -37,6 +42,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [autoLock, setAutoLockState] = useState(() =>
     parseSetting(Storage.getItemSync(AUTO_LOCK_KEY), AUTO_LOCK_SETTINGS, "1min"),
+  );
+  const [screenCapture, setScreenCaptureState] = useState(() =>
+    parseSetting(Storage.getItemSync(SCREEN_CAPTURE_KEY), SCREEN_CAPTURE_SETTINGS, "blocked"),
   );
 
   function setLanguage(next: LanguageSetting) {
@@ -54,8 +62,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     Storage.setItemSync(AUTO_LOCK_KEY, next);
   }
 
+  function setScreenCapture(next: ScreenCaptureSetting) {
+    setScreenCaptureState(next);
+    Storage.setItemSync(SCREEN_CAPTURE_KEY, next);
+  }
+
   return (
-    <SettingsContext value={{ language, theme, autoLock, setLanguage, setTheme, setAutoLock }}>
+    <SettingsContext
+      value={{
+        language,
+        theme,
+        autoLock,
+        screenCapture,
+        setLanguage,
+        setTheme,
+        setAutoLock,
+        setScreenCapture,
+      }}
+    >
       {children}
     </SettingsContext>
   );

@@ -131,6 +131,10 @@ export const en = {
     masterPassword: "Master password",
     changeMasterPassword: "Change master password",
     deviceLock: "Unlock with phone lock",
+    allowScreenshots: "Allow screenshots",
+    allowScreenshotsNote:
+      "While this is off, screenshots are blocked and the app is hidden in recent apps.",
+    screenshotBlocked: "Screenshots are blocked. You can allow them in Settings.",
     autoLock: "Lock after leaving the app",
     immediately: "Now",
     oneMinute: "1 min",

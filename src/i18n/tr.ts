@@ -132,6 +132,10 @@ export const tr: Translations = {
     masterPassword: "Ana şifre",
     changeMasterPassword: "Ana şifreyi değiştir",
     deviceLock: "Telefon kilidiyle aç",
+    allowScreenshots: "Ekran görüntüsüne izin ver",
+    allowScreenshotsNote:
+      "Bu kapalıyken ekran görüntüsü alınamaz ve uygulama son kullanılanlarda gizlenir.",
+    screenshotBlocked: "Ekran görüntüleri engellendi. Ayarlar'dan izin verebilirsiniz.",
     autoLock: "Uygulamadan çıkınca kilitle",
     immediately: "Hemen",
     oneMinute: "1 dk",

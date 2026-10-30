@@ -11,7 +11,16 @@ import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
 export default function SettingsScreen() {
-  const { language, theme, autoLock, setLanguage, setTheme, setAutoLock } = useSettings();
+  const {
+    language,
+    theme,
+    autoLock,
+    screenCapture,
+    setLanguage,
+    setTheme,
+    setAutoLock,
+    setScreenCapture,
+  } = useSettings();
   const { lock, masterPassword, deviceLockAvailable, deviceLockOn, setDeviceLockOn, verifyUser } =
     useVault();
   const t = useTranslation();
@@ -22,6 +31,13 @@ export default function SettingsScreen() {
   async function changeDeviceLock(on: boolean) {
     if (on && !(await verifyUser(t.lock.devicePrompt))) return;
     await setDeviceLockOn(on);
+  }
+
+  // Being here means the vault is unlocked. Allowing screenshots also asks for the phone's
+  // lock when it is in use, so someone picking up an open phone cannot do it silently.
+  async function changeScreenCapture(allowed: boolean) {
+    if (allowed && deviceLockOn && !(await verifyUser(t.lock.devicePrompt))) return;
+    setScreenCapture(allowed ? "allowed" : "blocked");
   }
 
   return (
@@ -83,6 +99,16 @@ export default function SettingsScreen() {
             />
           </View>
         )}
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>{t.settings.allowScreenshots}</Text>
+          <Switch
+            value={screenCapture === "allowed"}
+            onValueChange={changeScreenCapture}
+            accessibilityLabel={t.settings.allowScreenshots}
+          />
+        </View>
+        <Text style={styles.note}>{t.settings.allowScreenshotsNote}</Text>
 
         <Text style={styles.label}>{t.settings.autoLock}</Text>
         <SegmentedControl
