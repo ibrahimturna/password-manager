@@ -1,6 +1,6 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { mockCategories, mockCredentials } from "@/data/mock-vault";
+import { useVault } from "@/data/vault-context";
 import type { Category, Credential } from "@/types/vault";
 
 import { getVisibleRows, type TreeRow } from "./category-tree";
@@ -15,7 +15,8 @@ type CategoryTreeListProps = {
 // Shows the whole vault as an expandable tree. Tapping a category expands or collapses it.
 // This component does not own the expanded state; the screen passes it in.
 export function CategoryTreeList({ expandedIds, onToggleCategory }: CategoryTreeListProps) {
-  const rows = getVisibleRows(mockCategories, mockCredentials, expandedIds);
+  const { categories, credentials } = useVault();
+  const rows = getVisibleRows(categories, credentials, expandedIds);
 
   return (
     <FlatList

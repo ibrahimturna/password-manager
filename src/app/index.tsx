@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { mockCategories } from "@/data/mock-vault";
+import { useVault } from "@/data/vault-context";
 import { toggleExpanded } from "@/features/categories/category-tree";
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
 
 export default function HomeScreen() {
+  const { categories } = useVault();
+
   // Which categories are currently open. A Set makes "is this one open?" a quick lookup.
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
 
   function toggleCategory(categoryId: string) {
     // `current` is the latest state; toggleExpanded returns a new Set, so React re-renders.
-    setExpandedIds((current) => toggleExpanded(current, categoryId, mockCategories));
+    setExpandedIds((current) => toggleExpanded(current, categoryId, categories));
   }
 
   function collapseAll() {
