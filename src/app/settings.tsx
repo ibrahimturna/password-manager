@@ -3,10 +3,13 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useSettings } from "@/features/settings/settings-context";
 import { useTranslation } from "@/i18n/use-translation";
+import type { Palette } from "@/theme/colors";
+import { useTheme } from "@/theme/use-theme";
 
 export default function SettingsScreen() {
   const { language, theme, setLanguage, setTheme } = useSettings();
   const t = useTranslation();
+  const styles = createStyles(useTheme().colors);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -42,19 +45,22 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    gap: 24,
-  },
-  section: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  note: {
-    color: "#666",
-  },
-});
+function createStyles(colors: Palette) {
+  return StyleSheet.create({
+    content: {
+      padding: 16,
+      gap: 24,
+    },
+    section: {
+      gap: 8,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.onSurface,
+    },
+    note: {
+      color: colors.onSurfaceVariant,
+    },
+  });
+}

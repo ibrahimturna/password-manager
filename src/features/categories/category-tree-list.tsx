@@ -3,6 +3,8 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useVault } from "@/data/vault-context";
 import { useTranslation } from "@/i18n/use-translation";
+import type { Palette } from "@/theme/colors";
+import { useTheme } from "@/theme/use-theme";
 import type { Category, Credential } from "@/types/vault";
 
 import { getVisibleRows, type TreeRow } from "./category-tree";
@@ -28,6 +30,7 @@ export function CategoryTreeList({
   onRenameCategory,
 }: CategoryTreeListProps) {
   const t = useTranslation();
+  const styles = createStyles(useTheme().colors);
   const { categories, credentials } = useVault();
   const rows = getVisibleRows(categories, credentials, expandedIds);
   // The category whose "⋯" actions are open. Only one at a time.
@@ -116,6 +119,7 @@ function CategoryRow({
   onRename,
 }: CategoryRowProps) {
   const t = useTranslation();
+  const styles = createStyles(useTheme().colors);
   const indent = { paddingLeft: depth * INDENT_PER_LEVEL };
 
   return (
@@ -154,6 +158,8 @@ function CategoryRow({
 }
 
 function MenuAction({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = createStyles(useTheme().colors);
+
   return (
     <Pressable onPress={onPress} style={styles.menuAction} accessibilityRole="button">
       <Text style={styles.menuActionText}>{label}</Text>
@@ -164,6 +170,7 @@ function MenuAction({ label, onPress }: { label: string; onPress: () => void }) 
 // Shows title and username only. The password is never rendered in the tree.
 function CredentialRow({ credential, depth }: { credential: Credential; depth: number }) {
   const t = useTranslation();
+  const styles = createStyles(useTheme().colors);
 
   return (
     <View style={[styles.row, styles.credentialRow, { paddingLeft: depth * INDENT_PER_LEVEL }]}>
@@ -173,51 +180,55 @@ function CredentialRow({ credential, depth }: { credential: Credential; depth: n
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
-  },
-  categoryLine: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoryName: {
-    flex: 1,
-    paddingVertical: 12,
-  },
-  menuButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  menuButtonText: {
-    fontSize: 22,
-    color: "#666",
-  },
-  menu: {
-    paddingBottom: 8,
-  },
-  menuAction: {
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  menuActionText: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-  credentialRow: {
-    paddingVertical: 12,
-  },
-  rowTitle: {
-    fontSize: 18,
-  },
-  rowSubtitle: {
-    marginTop: 2,
-    color: "#666",
-  },
-  emptyText: {
-    paddingVertical: 12,
-    color: "#666",
-    fontStyle: "italic",
-  },
-});
+function createStyles(colors: Palette) {
+  return StyleSheet.create({
+    row: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.outlineVariant,
+    },
+    categoryLine: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    categoryName: {
+      flex: 1,
+      paddingVertical: 12,
+    },
+    menuButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    menuButtonText: {
+      fontSize: 22,
+      color: colors.onSurfaceVariant,
+    },
+    menu: {
+      paddingBottom: 8,
+      backgroundColor: colors.surfaceContainer,
+    },
+    menuAction: {
+      paddingVertical: 10,
+      paddingHorizontal: 24,
+    },
+    menuActionText: {
+      fontSize: 16,
+      color: colors.primary,
+    },
+    credentialRow: {
+      paddingVertical: 12,
+    },
+    rowTitle: {
+      fontSize: 18,
+      color: colors.onSurface,
+    },
+    rowSubtitle: {
+      marginTop: 2,
+      color: colors.onSurfaceVariant,
+    },
+    emptyText: {
+      paddingVertical: 12,
+      color: colors.onSurfaceVariant,
+      fontStyle: "italic",
+    },
+  });
+}

@@ -28,6 +28,7 @@ export const en = {
     name: "Name",
     newName: "New name",
     namePlaceholder: "e.g. Credit Cards",
+    chooseCategoryFirst: "Choose a category first",
     cancel: "Cancel",
     save: "Save",
     chooseWhereToCreate: "Choose where to create it",

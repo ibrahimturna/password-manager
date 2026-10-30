@@ -5,9 +5,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 import { useTranslation } from "@/i18n/use-translation";
+import type { Palette } from "@/theme/colors";
+import { useTheme } from "@/theme/use-theme";
 
 export default function HomeScreen() {
   const t = useTranslation();
+  const styles = createStyles(useTheme().colors);
   const { expandedIds, toggleCategory, collapseAll } = useExpandedCategories();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
@@ -52,41 +55,43 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    gap: 12,
-  },
-  notice: {
-    textAlign: "center",
-    color: "#666",
-  },
-  collapseButton: {
-    alignSelf: "flex-end",
-    paddingVertical: 4,
-  },
-  collapseText: {
-    color: "#208AEF",
-    fontSize: 16,
-  },
-  disabledText: {
-    color: "#aaa",
-  },
-  floatingButton: {
-    position: "absolute",
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28, // half the size makes a circle
-    backgroundColor: "#208AEF",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4, // Android shadow
-  },
-  floatingButtonText: {
-    color: "#fff",
-    fontSize: 30,
-    lineHeight: 32,
-  },
-});
+function createStyles(colors: Palette) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 16,
+      gap: 12,
+    },
+    notice: {
+      textAlign: "center",
+      color: colors.onSurfaceVariant,
+    },
+    collapseButton: {
+      alignSelf: "flex-end",
+      paddingVertical: 4,
+    },
+    collapseText: {
+      color: colors.primary,
+      fontSize: 16,
+    },
+    disabledText: {
+      color: colors.disabledContent,
+    },
+    floatingButton: {
+      position: "absolute",
+      right: 16,
+      width: 56,
+      height: 56,
+      borderRadius: 28, // half the size makes a circle
+      backgroundColor: colors.primaryContainer,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 4, // Android shadow
+    },
+    floatingButtonText: {
+      color: colors.onPrimaryContainer,
+      fontSize: 30,
+      lineHeight: 32,
+    },
+  });
+}

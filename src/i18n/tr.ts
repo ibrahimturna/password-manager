@@ -29,6 +29,7 @@ export const tr: Translations = {
     name: "Ad",
     newName: "Yeni ad",
     namePlaceholder: "ör. Kredi Kartları",
+    chooseCategoryFirst: "Önce bir kategori seçin",
     cancel: "İptal",
     save: "Kaydet",
     chooseWhereToCreate: "Nerede oluşturulacağını seçin",

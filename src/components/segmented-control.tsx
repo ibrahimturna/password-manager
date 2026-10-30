@@ -1,5 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import type { Palette } from "@/theme/colors";
+import { useTheme } from "@/theme/use-theme";
+
 export type SegmentedOption<T extends string> = {
   value: T;
   label: string;
@@ -19,19 +22,27 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
 }: SegmentedControlProps<T>) {
+  const styles = createStyles(useTheme().colors);
+
   return (
     <View style={styles.container} accessibilityRole="radiogroup">
-      {options.map((option) => {
+      {options.map((option, index) => {
         const isSelected = option.value === value;
         return (
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
-            style={[styles.segment, isSelected && styles.segmentSelected]}
+            style={[
+              styles.segment,
+              index > 0 && styles.segmentDivider,
+              isSelected && styles.segmentSelected,
+            ]}
             accessibilityRole="radio"
             accessibilityState={{ selected: isSelected }}
           >
-            <Text style={[styles.label, isSelected && styles.labelSelected]}>{option.label}</Text>
+            <Text style={[styles.label, isSelected && styles.labelSelected]}>
+              {isSelected ? `✓ ${option.label}` : option.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -39,27 +50,35 @@ export function SegmentedControl<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    borderWidth: 1,
-    borderColor: "#208AEF",
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  segmentSelected: {
-    backgroundColor: "#208AEF",
-  },
-  label: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-  labelSelected: {
-    color: "#fff",
-  },
-});
+// Styles depend on the colours, so they are built from the active palette.
+function createStyles(colors: Palette) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: 20,
+      overflow: "hidden",
+    },
+    segment: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: "center",
+    },
+    segmentDivider: {
+      borderLeftWidth: 1,
+      borderLeftColor: colors.outline,
+    },
+    segmentSelected: {
+      backgroundColor: colors.secondaryContainer,
+    },
+    label: {
+      fontSize: 15,
+      color: colors.onSurface,
+    },
+    labelSelected: {
+      color: colors.onSecondaryContainer,
+      fontWeight: "600",
+    },
+  });
+}

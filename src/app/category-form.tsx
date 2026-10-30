@@ -17,6 +17,8 @@ import {
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Translations } from "@/i18n/en";
+import type { Palette } from "@/theme/colors";
+import { useTheme } from "@/theme/use-theme";
 import type { Category } from "@/types/vault";
 
 type Mode = "create" | "rename";
@@ -28,6 +30,8 @@ const INDENT_PER_LEVEL = 20;
 // or from a row's "⋯" actions with `mode` and `categoryId` filled in.
 export default function CategoryFormScreen() {
   const t = useTranslation();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const params = useLocalSearchParams<{ mode?: string; categoryId?: string }>();
   const { categories, createCategory, renameCategory } = useVault();
   const { expandWithParents } = useExpandedCategories();
@@ -129,8 +133,12 @@ export default function CategoryFormScreen() {
         // Open the keyboard straight away only when a row's "⋯" action chose the category.
         autoFocus={initialCategory !== undefined}
         returnKeyType="done"
-        placeholder={t.categoryForm.namePlaceholder}
-        style={[styles.input, !canSave && styles.inputDisabled]}
+        placeholder={canSave ? t.categoryForm.namePlaceholder : t.categoryForm.chooseCategoryFirst}
+        placeholderTextColor={colors.onSurfaceVariant}
+        selectionColor={colors.primary}
+        // The style never changes after the input appears: on Android, changing the input's
+        // background later reset its padding to zero.
+        style={styles.input}
         accessibilityLabel={mode === "create" ? t.categoryForm.name : t.categoryForm.newName}
       />
       {error !== null && <Text style={styles.error}>{getErrorMessage(error, t)}</Text>}
@@ -144,8 +152,11 @@ export default function CategoryFormScreen() {
           disabled={!canSave}
           style={[styles.button, styles.saveButton, !canSave && styles.saveButtonDisabled]}
           accessibilityRole="button"
+          accessibilityState={{ disabled: !canSave }}
         >
-          <Text style={styles.saveText}>{t.categoryForm.save}</Text>
+          <Text style={[styles.saveText, !canSave && styles.saveTextDisabled]}>
+            {t.categoryForm.save}
+          </Text>
         </Pressable>
       </View>
 
@@ -198,6 +209,8 @@ function getErrorMessage(error: CategoryNameError, t: Translations): string {
 type PickerRowProps = { label: string; depth: number; isSelected: boolean; onPress: () => void };
 
 function PickerRow({ label, depth, isSelected, onPress }: PickerRowProps) {
+  const styles = createStyles(useTheme().colors);
+
   return (
     <Pressable
       onPress={onPress}
@@ -209,85 +222,93 @@ function PickerRow({ label, depth, isSelected, onPress }: PickerRowProps) {
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
     >
-      <Text style={styles.pickerText}>{label}</Text>
+      <Text style={[styles.pickerText, isSelected && styles.pickerTextSelected]}>{label}</Text>
       {isSelected && <Text style={styles.pickerCheck}>✓</Text>}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-  },
-  form: {
-    gap: 8,
-  },
-  label: {
-    marginTop: 8,
-    color: "#666",
-  },
-  selection: {
-    fontSize: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 18,
-    // Always set a background colour. On Android, adding one later (when the input becomes
-    // disabled) replaces the input's background and resets its padding to zero.
-    backgroundColor: "#fff",
-  },
-  inputDisabled: {
-    backgroundColor: "#f2f2f2",
-  },
-  error: {
-    color: "#D93025",
-  },
-  buttons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 4,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  cancelText: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-  saveButton: {
-    backgroundColor: "#208AEF",
-  },
-  saveButtonDisabled: {
-    backgroundColor: "#aaa",
-  },
-  saveText: {
-    fontSize: 16,
-    color: "#fff",
-  },
-  pickerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingRight: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
-  },
-  pickerRowSelected: {
-    backgroundColor: "#E6F4FE",
-  },
-  pickerText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  pickerCheck: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-});
+function createStyles(colors: Palette) {
+  return StyleSheet.create({
+    content: {
+      padding: 16,
+    },
+    form: {
+      gap: 8,
+    },
+    label: {
+      marginTop: 8,
+      color: colors.onSurfaceVariant,
+    },
+    selection: {
+      fontSize: 16,
+      color: colors.onSurface,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 18,
+      color: colors.onSurface,
+      // Material 3 "outlined" text field: same background as the screen, only a border.
+      backgroundColor: colors.surface,
+    },
+    error: {
+      color: colors.error,
+    },
+    buttons: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 12,
+      marginTop: 4,
+    },
+    button: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 20,
+    },
+    cancelText: {
+      fontSize: 16,
+      color: colors.primary,
+    },
+    saveButton: {
+      backgroundColor: colors.primary,
+    },
+    saveButtonDisabled: {
+      backgroundColor: colors.disabledContainer,
+    },
+    saveText: {
+      fontSize: 16,
+      color: colors.onPrimary,
+    },
+    saveTextDisabled: {
+      color: colors.disabledContent,
+    },
+    pickerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingRight: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.outlineVariant,
+    },
+    pickerRowSelected: {
+      backgroundColor: colors.primaryContainer,
+    },
+    pickerText: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.onSurface,
+    },
+    pickerTextSelected: {
+      color: colors.onPrimaryContainer,
+      fontWeight: "600",
+    },
+    pickerCheck: {
+      fontSize: 16,
+      color: colors.onPrimaryContainer,
+    },
+  });
+}
