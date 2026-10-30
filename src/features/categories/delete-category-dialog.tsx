@@ -103,7 +103,8 @@ function createStyles(colors: Palette) {
       borderWidth: 1,
       borderColor: colors.outlineVariant,
       borderRadius: 12,
-      backgroundColor: colors.surface,
+      // Same colour as the card; the border alone marks the preview area.
+      backgroundColor: colors.surfaceContainerHigh,
     },
     previewContent: {
       paddingHorizontal: 12,
