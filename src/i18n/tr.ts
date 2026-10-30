@@ -6,8 +6,10 @@ export const tr: Translations = {
     title: "Şifre Yöneticisi",
   },
   home: {
-    mockNotice: "Yalnızca örnek veri — gerçek şifre girmeyin.",
     collapseAll: "Tümünü daralt",
+    searchPlaceholder: "Klasör ve şifrelerde ara",
+    searchButton: "Ara",
+    clearSearch: "Aramayı temizle",
     addButton: "Ekle",
     closeAddMenu: "Kapat",
     newPassword: "Yeni şifre",
@@ -16,6 +18,7 @@ export const tr: Translations = {
   tree: {
     empty: "Boş",
     noFolders: "Henüz klasör yok.",
+    noResults: (query: string) => `“${query}” için sonuç yok`,
     actionsFor: (name: string) => `${name} için işlemler`,
     addPassword: "Şifre ekle",
     addSubfolder: "Alt klasör ekle",
@@ -96,5 +99,6 @@ export const tr: Translations = {
     dark: "Koyu",
     notSavedNote:
       "Ayarlar henüz kaydedilmiyor; uygulama yeniden başlatıldığında “Cihaz” seçeneğine döner.",
+    mockNotice: "Yalnızca örnek veri — gerçek şifre girmeyin.",
   },
 };

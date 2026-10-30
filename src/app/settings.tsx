@@ -41,6 +41,7 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={styles.note}>{t.settings.notSavedNote}</Text>
+      <Text style={styles.note}>{t.settings.mockNotice}</Text>
     </ScrollView>
   );
 }

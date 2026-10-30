@@ -5,8 +5,10 @@ export const en = {
     title: "Password Manager",
   },
   home: {
-    mockNotice: "Mock data only — do not enter real passwords.",
     collapseAll: "Collapse all",
+    searchPlaceholder: "Search folders and passwords",
+    searchButton: "Search",
+    clearSearch: "Clear search",
     addButton: "Add",
     closeAddMenu: "Close",
     newPassword: "New password",
@@ -15,6 +17,7 @@ export const en = {
   tree: {
     empty: "Empty",
     noFolders: "No folders yet.",
+    noResults: (query: string) => `No results for “${query}”`,
     actionsFor: (name: string) => `Actions for ${name}`,
     addPassword: "Add password",
     addSubfolder: "Add subfolder",
@@ -94,6 +97,7 @@ export const en = {
     light: "Light",
     dark: "Dark",
     notSavedNote: "Settings are not saved yet and reset to “Device” when the app restarts.",
+    mockNotice: "Mock data only — do not enter real passwords.",
   },
 };
 

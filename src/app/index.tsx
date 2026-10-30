@@ -1,22 +1,39 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextInputInstance,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Icon, type IconName } from "@/components/icon";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
-import { getFolderById, getSubtreeRows, type TreeRow } from "@/features/folders/folder-tree";
+import {
+  getFolderById,
+  getSubtreeRows,
+  toggleExpanded,
+  type TreeRow,
+} from "@/features/folders/folder-tree";
 import { FolderTreeList } from "@/features/folders/folder-tree-list";
 import { DeleteFolderDialog } from "@/features/folders/delete-folder-dialog";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
 import { copyPassword } from "@/features/credentials/copy-password";
+import { searchVault } from "@/features/search/search";
 import { useUndo } from "@/features/undo/undo-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
 const FLOATING_BUTTON_SIZE = 56;
+const SEARCH_BUTTON_SIZE = 44;
+const BUTTON_GAP = 12;
 // How long a copy button shows a check mark after copying.
 const COPIED_FEEDBACK_MS = 2000;
 
@@ -45,7 +62,47 @@ export default function HomeScreen() {
 
   const { pendingUndo, offerUndo, runUndo, dismissUndo } = useUndo();
 
-  const hasExpanded = expandedIds.size > 0;
+  // Search. The results are the normal tree, cut down to the matches (see searchVault).
+  // React Native 0.88 types a TextInput ref with TextInputInstance (it has .focus()).
+  const searchInputRef = useRef<TextInputInstance>(null);
+  const [query, setQuery] = useState("");
+  // Open/closed folders while searching. Separate from the normal tree's state, so clearing
+  // the search brings the tree back exactly as it was.
+  const [searchExpandedIds, setSearchExpandedIds] = useState<ReadonlySet<string>>(new Set());
+  const search = searchVault(folders, credentials, query);
+  const isSearching = search !== null;
+
+  const shownExpandedIds = isSearching ? searchExpandedIds : expandedIds;
+  const hasExpanded = shownExpandedIds.size > 0;
+
+  function changeQuery(text: string) {
+    closeMenu();
+    setQuery(text);
+    // Every new query starts with the folders opened down to its matches.
+    setSearchExpandedIds(searchVault(folders, credentials, text)?.expandedIds ?? new Set());
+  }
+
+  function toggleShownFolder(folderId: string) {
+    if (isSearching) {
+      setSearchExpandedIds((current) => toggleExpanded(current, folderId, folders));
+    } else {
+      toggleFolder(folderId);
+    }
+  }
+
+  function collapseShownFolders() {
+    if (isSearching) {
+      setSearchExpandedIds(new Set());
+    } else {
+      collapseAll();
+    }
+  }
+
+  // The search button puts the cursor in the search field, which opens the keyboard.
+  function focusSearch() {
+    closeMenu();
+    searchInputRef.current?.focus();
+  }
 
   function toggleMenu(folderId: string) {
     setMenuFolderId((current) => (current === folderId ? null : folderId));
@@ -90,8 +147,14 @@ export default function HomeScreen() {
     if (deleteTarget === null) return;
 
     const deletion = deleteFolder(deleteTarget.folder.id);
-    // Deleted folders must not stay in the open/closed state.
-    forgetFolders(deletion.folders.map((removed) => removed.item.id));
+    // Deleted folders must not stay in the open/closed state (normal or search).
+    const deletedIds = deletion.folders.map((removed) => removed.item.id);
+    forgetFolders(deletedIds);
+    setSearchExpandedIds((current) => {
+      const next = new Set(current);
+      for (const id of deletedIds) next.delete(id);
+      return next;
+    });
     offerUndo(t.deleteFolder.deleted(deleteTarget.folder.name), () =>
       restoreDeletion(deletion),
     );
@@ -115,13 +178,47 @@ export default function HomeScreen() {
   return (
     // Any tap that no button inside takes (text, credential rows, empty space) closes the menu.
     // Buttons inside win because React Native gives a tap to the innermost pressable element.
-    <Pressable style={styles.container} onPress={closeMenu} accessible={false}>
-      <Text style={styles.notice}>{t.home.mockNotice}</Text>
+    <Pressable
+      style={styles.container}
+      onPress={() => {
+        closeMenu();
+        Keyboard.dismiss();
+      }}
+      accessible={false}
+    >
+      <View style={styles.searchField}>
+        <Icon name="search" color={colors.onSurfaceVariant} size={22} />
+        <TextInput
+          ref={searchInputRef}
+          value={query}
+          onChangeText={changeQuery}
+          placeholder={t.home.searchPlaceholder}
+          placeholderTextColor={colors.onSurfaceVariant}
+          selectionColor={colors.primary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          importantForAutofill="no"
+          // The border is on the wrapper, so the input's own style never changes.
+          style={styles.searchInput}
+          accessibilityLabel={t.home.searchButton}
+        />
+        {query !== "" && (
+          <Pressable
+            onPress={() => changeQuery("")}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t.home.clearSearch}
+          >
+            <Icon name="close" color={colors.onSurfaceVariant} size={22} />
+          </Pressable>
+        )}
+      </View>
 
       <Pressable
         onPress={() => {
           closeMenu();
-          collapseAll();
+          collapseShownFolders();
         }}
         disabled={!hasExpanded}
         style={styles.collapseButton}
@@ -138,10 +235,12 @@ export default function HomeScreen() {
       </Pressable>
 
       <FolderTreeList
-        expandedIds={expandedIds}
+        expandedIds={shownExpandedIds}
+        filter={search ?? undefined}
+        emptyText={isSearching ? t.tree.noResults(query.trim()) : t.tree.noFolders}
         menuFolderId={menuFolderId}
         copiedCredentialId={copiedCredentialId}
-        onToggleFolder={toggleFolder}
+        onToggleFolder={toggleShownFolder}
         onToggleMenu={toggleMenu}
         onCloseMenu={closeMenu}
         onAddPassword={(folderId) => openCredentialForm({ folderId })}
@@ -160,15 +259,35 @@ export default function HomeScreen() {
         <Snackbar
           message={pendingUndo.message}
           action={{ label: t.deleteFolder.undo, onPress: runUndo }}
-          // Sits above the round button, as Material recommends.
-          bottom={insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12}
+          // Sits above the round buttons, as Material recommends.
+          bottom={
+            insets.bottom + 16 + FLOATING_BUTTON_SIZE + BUTTON_GAP + SEARCH_BUTTON_SIZE + BUTTON_GAP
+          }
         />
+      )}
+
+      {/* The small search button above "+". Hidden while the "+" menu uses that space. */}
+      {!isAddMenuOpen && (
+        <Pressable
+          onPress={focusSearch}
+          style={[
+            styles.searchButton,
+            { bottom: insets.bottom + 16 + FLOATING_BUTTON_SIZE + BUTTON_GAP },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={t.home.searchButton}
+        >
+          <Icon name="search" color={colors.onSecondaryContainer} size={22} />
+        </Pressable>
       )}
 
       {/* The "+" menu: two labelled choices above the round button. */}
       {isAddMenuOpen && (
         <View
-          style={[styles.addMenu, { bottom: insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12 }]}
+          style={[
+            styles.addMenu,
+            { bottom: insets.bottom + 16 + FLOATING_BUTTON_SIZE + BUTTON_GAP },
+          ]}
         >
           <AddMenuItem
             icon="newPassword"
@@ -220,9 +339,33 @@ function createStyles(colors: Palette) {
       padding: 16,
       gap: 12,
     },
-    notice: {
-      textAlign: "center",
-      color: colors.onSurfaceVariant,
+    searchField: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.outline,
+      borderRadius: 28, // pill shape, like Material 3's search bar
+      backgroundColor: colors.surfaceContainer,
+    },
+    searchInput: {
+      flex: 1,
+      paddingVertical: 10,
+      fontSize: 16,
+      color: colors.onSurface,
+    },
+    searchButton: {
+      position: "absolute",
+      // Centred above the larger "+" button.
+      right: 16 + (FLOATING_BUTTON_SIZE - SEARCH_BUTTON_SIZE) / 2,
+      width: SEARCH_BUTTON_SIZE,
+      height: SEARCH_BUTTON_SIZE,
+      borderRadius: SEARCH_BUTTON_SIZE / 2,
+      backgroundColor: colors.secondaryContainer,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 3, // Android shadow
     },
     collapseButton: {
       alignSelf: "flex-end",

@@ -11,6 +11,7 @@ const ICONS = {
   close: { ios: "xmark", android: "close" },
   collapseAll: { ios: "rectangle.compress.vertical", android: "unfold_less" },
   copy: { ios: "doc.on.doc", android: "content_copy" },
+  search: { ios: "magnifyingglass", android: "search" },
   delete: { ios: "trash", android: "delete" },
   edit: { ios: "pencil", android: "edit" },
   expandMore: { ios: "chevron.down", android: "expand_more" },

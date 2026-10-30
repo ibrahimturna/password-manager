@@ -10,11 +10,16 @@ import type { Credential, Folder } from "@/types/vault";
 import { getVisibleRows, type TreeRow } from "./folder-tree";
 
 const INDENT_PER_LEVEL = 20;
-// Space below the last row, so the round "+" button does not cover it.
-const BOTTOM_SPACE_FOR_BUTTON = 88;
+// Space below the last row, so the round buttons (search and "+") do not cover it.
+const BOTTOM_SPACE_FOR_BUTTON = 140;
 
 type FolderTreeListProps = {
   expandedIds: ReadonlySet<string>;
+  // When searching: only these folders and credentials are shown. Their parent folders are
+  // always included, so the tree keeps its shape.
+  filter?: { folderIds: ReadonlySet<string>; credentialIds: ReadonlySet<string> };
+  // Shown when there are no rows at all.
+  emptyText: string;
   // The folder whose "⋮" actions are open (only one at a time), or null.
   menuFolderId: string | null;
   // The credential whose password was just copied (its copy icon shows a check), or null.
@@ -36,6 +41,8 @@ type FolderTreeListProps = {
 // This component does not own any state; the screen passes it in.
 export function FolderTreeList({
   expandedIds,
+  filter,
+  emptyText,
   menuFolderId,
   copiedCredentialId,
   onToggleFolder,
@@ -48,10 +55,15 @@ export function FolderTreeList({
   onOpenCredential,
   onCopyCredential,
 }: FolderTreeListProps) {
-  const t = useTranslation();
   const styles = createStyles(useTheme().colors);
   const { folders, credentials } = useVault();
-  const rows = getVisibleRows(folders, credentials, expandedIds);
+  const shownFolders =
+    filter === undefined ? folders : folders.filter((folder) => filter.folderIds.has(folder.id));
+  const shownCredentials =
+    filter === undefined
+      ? credentials
+      : credentials.filter((credential) => filter.credentialIds.has(credential.id));
+  const rows = getVisibleRows(shownFolders, shownCredentials, expandedIds);
 
   return (
     <FlatList
@@ -63,6 +75,10 @@ export function FolderTreeList({
       contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
       // Scrolling counts as "doing something else", so it closes an open menu.
       onScrollBeginDrag={onCloseMenu}
+      // While searching, rows can be tapped without first closing the keyboard,
+      // and scrolling the results closes the keyboard.
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       renderItem={({ item }) => {
         switch (item.kind) {
           case "folder": {
@@ -122,7 +138,7 @@ export function FolderTreeList({
             return <ReadOnlyTreeRow row={item} />;
         }
       }}
-      ListEmptyComponent={<Text style={styles.emptyText}>{t.tree.noFolders}</Text>}
+      ListEmptyComponent={<Text style={styles.emptyText}>{emptyText}</Text>}
     />
   );
 }
