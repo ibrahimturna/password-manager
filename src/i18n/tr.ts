@@ -24,7 +24,7 @@ export const tr: Translations = {
     rename: "Yeniden adlandır",
     createInside: "Oluşturulacağı yer",
     categoryToRename: "Yeniden adlandırılacak kategori",
-    topLevel: "En üst düzey",
+    topLevel: "Ana kategori",
     chooseCategoryBelow: "Aşağıdaki listeden bir kategori seçin",
     name: "Ad",
     newName: "Yeni ad",
