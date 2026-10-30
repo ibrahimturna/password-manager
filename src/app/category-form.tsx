@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { SegmentedControl } from "@/components/segmented-control";
 import { useVault } from "@/data/vault-context";
 import {
   type CategoryNameError,
@@ -97,10 +98,14 @@ export default function CategoryFormScreen() {
 
   const header = (
     <View style={styles.form}>
-      <View style={styles.modeSwitch}>
-        <ModeButton label="New category" isSelected={mode === "create"} onPress={() => changeMode("create")} />
-        <ModeButton label="Rename" isSelected={mode === "rename"} onPress={() => changeMode("rename")} />
-      </View>
+      <SegmentedControl
+        options={[
+          { value: "create", label: "New category" },
+          { value: "rename", label: "Rename" },
+        ]}
+        value={mode}
+        onChange={changeMode}
+      />
 
       <Text style={styles.label}>{mode === "create" ? "Create inside" : "Category to rename"}</Text>
       <Text style={styles.selection}>
@@ -187,21 +192,6 @@ function getErrorMessage(error: CategoryNameError): string {
   }
 }
 
-type ModeButtonProps = { label: string; isSelected: boolean; onPress: () => void };
-
-function ModeButton({ label, isSelected, onPress }: ModeButtonProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.modeButton, isSelected && styles.modeButtonSelected]}
-      accessibilityRole="button"
-      accessibilityState={{ selected: isSelected }}
-    >
-      <Text style={[styles.modeText, isSelected && styles.modeTextSelected]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 type PickerRowProps = { label: string; depth: number; isSelected: boolean; onPress: () => void };
 
 function PickerRow({ label, depth, isSelected, onPress }: PickerRowProps) {
@@ -228,29 +218,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 8,
-  },
-  modeSwitch: {
-    flexDirection: "row",
-    borderWidth: 1,
-    borderColor: "#208AEF",
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  modeButtonSelected: {
-    backgroundColor: "#208AEF",
-  },
-  modeText: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-  modeTextSelected: {
-    color: "#fff",
   },
   label: {
     marginTop: 8,
