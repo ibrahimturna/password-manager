@@ -16,10 +16,20 @@ function makeIdGenerator() {
   };
 }
 
+// A fake clock: 1000, 2000, 3000, ... one step forward on every call.
+function makeClock() {
+  let time = 0;
+  return () => {
+    time += 1000;
+    return time;
+  };
+}
+
 function makeRepository() {
   return createInMemoryVaultRepository(
     { categories: seedCategories, credentials: [] },
     makeIdGenerator(),
+    makeClock(),
   );
 }
 
@@ -144,5 +154,74 @@ describe("deleteCategory and restoreDeletion", () => {
     const repository = makeRepository();
 
     expect(() => repository.deleteCategory("missing")).toThrow();
+  });
+});
+
+describe("credentials", () => {
+  const input = { categoryId: "banks", title: " Bank ", username: "", password: "fake-password" };
+
+  it("creates a credential with a generated id, cleaned values and timestamps", () => {
+    const repository = makeRepository();
+
+    const result = repository.createCredential(input);
+
+    const expected = {
+      id: "new-1",
+      categoryId: "banks",
+      title: "Bank",
+      username: null,
+      password: "fake-password",
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    expect(result).toEqual({ ok: true, credential: expected });
+    expect(repository.getCredentials()).toEqual([expected]);
+  });
+
+  it("rejects invalid values and stores nothing", () => {
+    const repository = makeRepository();
+
+    const result = repository.createCredential({ ...input, title: "", password: "" });
+
+    expect(result).toEqual({ ok: false, errors: { title: "empty", password: "empty" } });
+    expect(repository.getCredentials()).toEqual([]);
+  });
+
+  it("updates a credential: keeps createdAt, moves updatedAt, can change category", () => {
+    const repository = makeRepository();
+    repository.createCredential(input);
+
+    const result = repository.updateCredential("new-1", {
+      ...input,
+      categoryId: "social",
+      title: "Renamed",
+    });
+
+    expect(result.ok && result.credential).toMatchObject({
+      categoryId: "social",
+      title: "Renamed",
+      createdAt: 1000,
+      updatedAt: 2000,
+    });
+  });
+
+  it("deletes a credential and undo puts it back", () => {
+    const repository = makeRepository();
+    repository.createCredential(input);
+    const before = repository.getCredentials();
+
+    const deletion = repository.deleteCredential("new-1");
+    expect(repository.getCredentials()).toEqual([]);
+
+    repository.restoreCredentials(deletion);
+    expect(repository.getCredentials()).toEqual(before);
+  });
+
+  it("throws for a missing category or credential", () => {
+    const repository = makeRepository();
+
+    expect(() => repository.createCredential({ ...input, categoryId: "missing" })).toThrow();
+    expect(() => repository.updateCredential("missing", input)).toThrow();
+    expect(() => repository.deleteCredential("missing")).toThrow();
   });
 });

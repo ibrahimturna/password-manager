@@ -1,4 +1,5 @@
 import type { Category, Credential } from "@/types/vault";
+import { reinsert, type RemovedItem } from "@/utils/removed-items";
 
 import { getDescendantIds } from "./category-tree";
 
@@ -24,9 +25,6 @@ export function renameCategory(categories: Category[], id: string, name: string)
     category.id === id ? { ...category, name } : category,
   );
 }
-
-// An item that was removed, and where it was in its array, so Undo can put it back in place.
-type RemovedItem<T> = { item: T; index: number };
 
 // Everything one delete removed. Keep it to undo the delete with restoreDeletion.
 export type CategoryDeletion = {
@@ -59,18 +57,6 @@ export function deleteCategory(
   });
 
   return { categories: keptCategories, credentials: keptCredentials, deletion };
-}
-
-// Puts removed items back at their old positions.
-// Inserting from the lowest old position upward rebuilds the original order exactly,
-// as long as nothing else changed in between.
-function reinsert<T>(items: T[], removed: RemovedItem<T>[]): T[] {
-  const result = [...items];
-  const byPosition = [...removed].sort((a, b) => a.index - b.index);
-  for (const { item, index } of byPosition) {
-    result.splice(Math.min(index, result.length), 0, item);
-  }
-  return result;
 }
 
 // Undoes a deleteCategory. Returns new arrays and never changes the ones it is given.

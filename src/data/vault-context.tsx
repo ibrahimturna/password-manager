@@ -3,12 +3,15 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { mockCategories, mockCredentials } from "@/data/mock-vault";
 import type { CategoryDeletion } from "@/features/categories/category-mutations";
+import type { CredentialInput } from "@/features/credentials/credential-validation";
 import type { Category, Credential } from "@/types/vault";
 
 import {
   createInMemoryVaultRepository,
   type CreateCategoryResult,
+  type CredentialDeletion,
   type RenameCategoryResult,
+  type SaveCredentialResult,
 } from "./vault-repository";
 
 // What every screen inside <VaultProvider> can read and call.
@@ -19,6 +22,10 @@ type VaultContextValue = {
   renameCategory: (id: string, name: string) => RenameCategoryResult;
   deleteCategory: (id: string) => CategoryDeletion;
   restoreDeletion: (deletion: CategoryDeletion) => void;
+  createCredential: (input: CredentialInput) => SaveCredentialResult;
+  updateCredential: (id: string, input: CredentialInput) => SaveCredentialResult;
+  deleteCredential: (id: string) => CredentialDeletion;
+  restoreCredentials: (deletion: CredentialDeletion) => void;
 };
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -30,6 +37,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     createInMemoryVaultRepository(
       { categories: mockCategories, credentials: mockCredentials },
       randomUUID,
+      Date.now,
     ),
   );
 
@@ -65,6 +73,30 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setCredentials(repository.getCredentials());
   }
 
+  // Credential changes only touch credentials, so only that copy is refreshed.
+  function createCredential(input: CredentialInput): SaveCredentialResult {
+    const result = repository.createCredential(input);
+    setCredentials(repository.getCredentials());
+    return result;
+  }
+
+  function updateCredential(id: string, input: CredentialInput): SaveCredentialResult {
+    const result = repository.updateCredential(id, input);
+    setCredentials(repository.getCredentials());
+    return result;
+  }
+
+  function deleteCredential(id: string): CredentialDeletion {
+    const deletion = repository.deleteCredential(id);
+    setCredentials(repository.getCredentials());
+    return deletion;
+  }
+
+  function restoreCredentials(deletion: CredentialDeletion) {
+    repository.restoreCredentials(deletion);
+    setCredentials(repository.getCredentials());
+  }
+
   return (
     <VaultContext
       value={{
@@ -74,6 +106,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         renameCategory,
         deleteCategory,
         restoreDeletion,
+        createCredential,
+        updateCredential,
+        deleteCredential,
+        restoreCredentials,
       }}
     >
       {children}

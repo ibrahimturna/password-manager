@@ -7,13 +7,32 @@ import {
 } from "@/features/categories/category-mutations";
 import { type CategoryNameError, validateCategoryName } from "@/features/categories/category-name";
 import { getCategoryById } from "@/features/categories/category-tree";
+import {
+  addCredential,
+  deleteCredential,
+  restoreCredentials,
+  updateCredential,
+} from "@/features/credentials/credential-mutations";
+import {
+  type CredentialFieldErrors,
+  type CredentialInput,
+  validateCredential,
+} from "@/features/credentials/credential-validation";
 import type { Category, Credential } from "@/types/vault";
+import type { RemovedItem } from "@/utils/removed-items";
 
 export type CreateCategoryResult =
   | { ok: true; category: Category }
   | { ok: false; error: CategoryNameError };
 
 export type RenameCategoryResult = { ok: true } | { ok: false; error: CategoryNameError };
+
+export type SaveCredentialResult =
+  | { ok: true; credential: Credential }
+  | { ok: false; errors: CredentialFieldErrors };
+
+// What deleting one credential removed. Keep it to undo the delete with restoreCredentials.
+export type CredentialDeletion = RemovedItem<Credential>[];
 
 // The only way the app reads or changes vault data.
 // Screens depend on this type, not on where the data is stored, so the in-memory
@@ -28,6 +47,13 @@ export type VaultRepository = {
   // Returns what was removed, so the delete can be undone with restoreDeletion.
   deleteCategory(id: string): CategoryDeletion;
   restoreDeletion(deletion: CategoryDeletion): void;
+
+  // On success, returns the saved credential (with its id and timestamps).
+  createCredential(input: CredentialInput): SaveCredentialResult;
+  updateCredential(id: string, input: CredentialInput): SaveCredentialResult;
+  // Returns what was removed, so the delete can be undone with restoreCredentials.
+  deleteCredential(id: string): CredentialDeletion;
+  restoreCredentials(deletion: CredentialDeletion): void;
 };
 
 type VaultSeed = {
@@ -36,14 +62,32 @@ type VaultSeed = {
 };
 
 // Keeps the vault in memory, starting from `seed`. Everything is lost when the app restarts.
-// `generateId` makes ids for new items. The app passes a UUID generator; tests pass a predictable one.
+// `generateId` makes ids for new items and `now` tells the current time (milliseconds).
+// The app passes a UUID generator and Date.now; tests pass predictable ones.
 export function createInMemoryVaultRepository(
   seed: VaultSeed,
   generateId: () => string,
+  now: () => number,
 ): VaultRepository {
   // Only the functions below can see or replace these arrays.
   let categories = seed.categories;
   let credentials = seed.credentials;
+
+  // A credential must belong to an existing category. The UI only offers existing ones,
+  // so a missing category is a bug in the app, not a user mistake: it throws.
+  function requireCategory(categoryId: string) {
+    if (getCategoryById(categories, categoryId) === undefined) {
+      throw new Error(`Category "${categoryId}" does not exist.`);
+    }
+  }
+
+  function requireCredential(id: string): Credential {
+    const credential = credentials.find((item) => item.id === id);
+    if (credential === undefined) {
+      throw new Error(`Credential "${id}" does not exist.`);
+    }
+    return credential;
+  }
 
   return {
     getCategories: () => categories,
@@ -96,6 +140,41 @@ export function createInMemoryVaultRepository(
       const result = restoreDeletion(categories, credentials, deletion);
       categories = result.categories;
       credentials = result.credentials;
+    },
+
+    createCredential(input) {
+      requireCategory(input.categoryId);
+      const validation = validateCredential(input);
+      if (!validation.ok) {
+        return validation;
+      }
+
+      const id = generateId();
+      credentials = addCredential(credentials, id, validation.value, now());
+      return { ok: true, credential: requireCredential(id) };
+    },
+
+    updateCredential(id, input) {
+      requireCredential(id);
+      requireCategory(input.categoryId);
+      const validation = validateCredential(input);
+      if (!validation.ok) {
+        return validation;
+      }
+
+      credentials = updateCredential(credentials, id, validation.value, now());
+      return { ok: true, credential: requireCredential(id) };
+    },
+
+    deleteCredential(id) {
+      requireCredential(id);
+      const result = deleteCredential(credentials, id);
+      credentials = result.credentials;
+      return result.removed;
+    },
+
+    restoreCredentials(deletion) {
+      credentials = restoreCredentials(credentials, deletion);
     },
   };
 }
