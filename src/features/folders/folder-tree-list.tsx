@@ -244,21 +244,45 @@ function FolderLabel({ folder, isExpanded }: { folder: Folder; isExpanded: boole
   );
 }
 
-// One tree row that cannot be tapped. Used to preview a part of the tree (e.g. before a delete).
-export function ReadOnlyTreeRow({ row }: { row: TreeRow }) {
+type ReadOnlyTreeRowProps = {
+  row: TreeRow;
+  // A short word at the end of the row, like "New".
+  badge?: string;
+  // Lets a preview open and close folders. Nothing in the row can be changed.
+  onToggleFolder?: (folderId: string) => void;
+};
+
+// One tree row without any actions. Used to preview a part of the tree (e.g. before a delete).
+export function ReadOnlyTreeRow({ row, badge, onToggleFolder }: ReadOnlyTreeRowProps) {
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
   const indent = { paddingLeft: row.depth * INDENT_PER_LEVEL };
 
   switch (row.kind) {
-    case "folder":
-      return (
-        <View style={[styles.row, styles.folderName, indent]}>
+    case "folder": {
+      const content = (
+        <>
           <FolderLabel folder={row.folder} isExpanded={row.isExpanded} />
-        </View>
+          {badge !== undefined && <Text style={styles.badge}>{badge}</Text>}
+        </>
       );
+      if (onToggleFolder === undefined) {
+        return <View style={[styles.row, styles.folderName, indent]}>{content}</View>;
+      }
+      const folderId = row.folder.id;
+      return (
+        <Pressable
+          onPress={() => onToggleFolder(folderId)}
+          style={[styles.row, styles.folderName, indent]}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: row.isExpanded }}
+        >
+          {content}
+        </Pressable>
+      );
+    }
     case "credential":
-      return <CredentialRow credential={row.credential} depth={row.depth} />;
+      return <CredentialRow credential={row.credential} depth={row.depth} badge={badge} />;
     case "empty":
       return <Text style={[styles.emptyText, indent]}>{t.tree.empty}</Text>;
   }
@@ -298,10 +322,12 @@ function CredentialRow({
   credential,
   depth,
   actions,
+  badge,
 }: {
   credential: Credential;
   depth: number;
   actions?: CredentialRowActions;
+  badge?: string;
 }) {
   const t = useTranslation();
   const { colors } = useTheme();
@@ -315,6 +341,7 @@ function CredentialRow({
         <Text style={styles.rowTitle}>{credential.title}</Text>
         <Text style={styles.rowSubtitle}>{credential.username ?? t.tree.noUsername}</Text>
       </View>
+      {badge !== undefined && <Text style={styles.badge}>{badge}</Text>}
     </>
   );
 
@@ -401,6 +428,13 @@ function createStyles(colors: Palette) {
     rowSubtitle: {
       marginTop: 2,
       color: colors.onSurfaceVariant,
+    },
+    badge: {
+      marginLeft: "auto",
+      paddingHorizontal: 8,
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.primary,
     },
     emptyText: {
       paddingVertical: 12,

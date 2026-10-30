@@ -124,9 +124,14 @@ export default function SettingsScreen() {
         <Pressable onPress={lock} style={styles.textButton} accessibilityRole="button">
           <Text style={styles.textButtonLabel}>{t.settings.lockNow}</Text>
         </Pressable>
+        <Pressable
+          onPress={() => router.push("/backup")}
+          style={styles.textButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.textButtonLabel}>{t.backup.title}</Text>
+        </Pressable>
       </View>
-
-      <Text style={styles.note}>{t.settings.mockNotice}</Text>
     </ScrollView>
   );
 }

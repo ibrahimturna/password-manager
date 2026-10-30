@@ -83,6 +83,7 @@ function AppStack() {
           options={{ title: t.masterPasswordForm.title, presentation: "modal" }}
         />
         <Stack.Screen name="settings" options={{ title: t.settings.title }} />
+        <Stack.Screen name="backup" options={{ title: t.backup.title }} />
       </Stack>
     </ThemeProvider>
   );

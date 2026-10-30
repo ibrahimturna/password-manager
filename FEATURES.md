@@ -48,6 +48,15 @@ Local-only password manager for Android, version 1.0.0. It needs Android 7.0 or 
 - Android backup is turned off.
 - Known limits and accepted risks are listed in [SECURITY.md](SECURITY.md).
 
+### Backup and restore
+
+- Make an encrypted backup file, locked with your current master password. This asks for the phone lock if it is on, otherwise the master password.
+- Save the file to a folder you pick, starting from Documents, or send it through Android's Share menu.
+- Restore a backup file with the master password used when it was made.
+- Restoring adds new folders and passwords, skips what is already there and never deletes anything.
+- Before restoring, the backup is shown as a folder tree, with each item marked new, already here or different.
+- When a password differs between the phone and the backup, you see the current version and the backup version with their differences highlighted. You must choose one for every such password, one by one or all at once, before restoring. Showing the passwords is optional.
+
 ### Appearance and language
 
 - English and Turkish, or follow the phone's language.
@@ -111,6 +120,15 @@ Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.0.
 - Ekran görüntüsüne Ayarlar'dan izin verilebilir. Telefon kilidi açıksa bunun için onay istenir.
 - Android yedekleme kapalıdır.
 - Bilinen sınırlar ve kabul edilen riskler [SECURITY.md](SECURITY.md) dosyasında (İngilizce) listelenir.
+
+### Yedekleme ve geri yükleme
+
+- Mevcut ana şifrenizle kilitlenen, şifrelenmiş bir yedek dosyası oluşturun. Telefon kilidi açıksa o, değilse ana şifre istenir.
+- Dosyayı Belgeler'den başlayarak seçtiğiniz bir klasöre kaydedin veya Android'in Paylaş menüsüyle gönderin.
+- Yedek dosyasını, oluşturulduğu sırada kullanılan ana şifreyle geri yükleyin.
+- Geri yükleme yeni klasör ve şifreleri ekler, zaten mevcut olanları atlar ve hiçbir şeyi silmez.
+- Geri yüklemeden önce yedek, her öğesi yeni, zaten var veya farklı olarak işaretlenmiş bir klasör ağacı olarak gösterilir.
+- Bir şifre telefonda ve yedekte farklıysa mevcut sürümü ve yedekteki sürümü, farkları vurgulanmış olarak görürsünüz. Geri yüklemeden önce bu tür her şifre için tek tek veya toplu olarak bir sürüm seçmeniz gerekir. Şifreleri göstermek isteğe bağlıdır.
 
 ### Görünüm ve dil
 

@@ -12,6 +12,12 @@ import {
 } from "react";
 import { ActivityIndicator, AppState, StyleSheet, Text, View } from "react-native";
 
+import {
+  applyRestorePlan,
+  type RestoreChoice,
+  type RestorePlan,
+  type RestoreResult,
+} from "@/features/backup/restore-plan";
 import type { FolderDeletion } from "@/features/folders/folder-mutations";
 import type { CredentialInput } from "@/features/credentials/credential-validation";
 import { keptState } from "@/features/lock/kept-state";
@@ -71,6 +77,12 @@ type VaultContextValue = {
   setDeviceLockOn: (on: boolean) => Promise<void>;
   // Asks for the phone's lock while the vault is open. Resolves to whether it succeeded.
   verifyUser: (promptMessage: string) => Promise<boolean>;
+  // Runs a system screen (like a file picker) without it counting as leaving the app.
+  whileOutsideApp: <T>(task: () => Promise<T>) => Promise<T>;
+  restoreBackup: (
+    plan: RestorePlan,
+    choices: ReadonlyMap<string, RestoreChoice>,
+  ) => RestoreResult;
 };
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -331,13 +343,24 @@ function LoadedVaultProvider({
     onDeviceLockChange(on);
   }
 
-  async function verifyUser(promptMessage: string): Promise<boolean> {
+  async function whileOutsideApp<T>(task: () => Promise<T>): Promise<T> {
     isVerifyingRef.current = true;
     try {
-      return await verifyWithDeviceLock(promptMessage);
+      return await task();
     } finally {
       isVerifyingRef.current = false;
     }
+  }
+
+  function verifyUser(promptMessage: string): Promise<boolean> {
+    return whileOutsideApp(() => verifyWithDeviceLock(promptMessage));
+  }
+
+  function restoreBackup(plan: RestorePlan, choices: ReadonlyMap<string, RestoreChoice>) {
+    const result = applyRestorePlan(repository, plan, choices);
+    setFolders(repository.getFolders());
+    setCredentials(repository.getCredentials());
+    return result;
   }
 
   return (
@@ -360,6 +383,8 @@ function LoadedVaultProvider({
         deviceLockOn,
         setDeviceLockOn,
         verifyUser,
+        whileOutsideApp,
+        restoreBackup,
       }}
     >
       {children}

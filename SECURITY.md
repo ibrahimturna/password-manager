@@ -11,13 +11,15 @@ A local-only Android password manager. Nothing leaves the phone.
 - Screenshots are blocked and the app is blank in recent apps by default. Allowing them is a setting, and needs the phone lock when that is in use.
 - A copied password is marked sensitive and removed from the clipboard after 30 seconds.
 - Android backup is turned off.
+- Backup files are encrypted the same way, with the master password at the time of the backup. Making one needs the phone lock when that is on, otherwise the master password. Temporary copies made for sharing are deleted afterwards.
 
 ## Accepted risks
 
 These are deliberate trade-offs, not oversights.
 
 - **No recovery.** A forgotten master password can only be replaced from an unlocked vault, or by unlocking with the phone lock. There is no recovery code or cloud copy.
-- **No backup.** Uninstalling the app or losing the phone loses the vault.
+- **Backups are manual.** Uninstalling the app or losing the phone loses everything since the last backup file. Restoring also needs the master password used when that backup was made.
+- **A backup file can be attacked offline.** Anyone who gets the file can try passwords on their own computer. Argon2id slows this down, but a weak master password is still at risk.
 - **Weak passwords are allowed.** Any non-empty master password is accepted.
 - **The master password is readable once unlocked.** It is stored inside the encrypted vault so Settings can show it. Anyone who passes the phone lock can read or replace it.
 - **The phone lock is an app-level check.** Android's SecureStore authentication accepts only strong biometrics, so to allow PIN and pattern the app checks the lock itself. On a rooted phone this check can be bypassed.

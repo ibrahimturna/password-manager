@@ -60,8 +60,8 @@ function deriveKey(password: string, wrapped: Omit<WrappedKey, "sealed">): Promi
   });
 }
 
-// Locks the vault key with the password and saves the locked copy.
-export async function savePasswordCopy(vaultKey: string, password: string): Promise<void> {
+// Encrypts data with a key made from the password. Used for the vault key and for backups.
+export async function sealWithPassword(data: Uint8Array, password: string): Promise<WrappedKey> {
   const settings = {
     salt: bytesToHex(getRandomBytes(SALT_BYTES)),
     memory: KDF_MEMORY_KIB,
@@ -69,8 +69,27 @@ export async function savePasswordCopy(vaultKey: string, password: string): Prom
     parallelism: KDF_PARALLELISM,
   };
   const passwordKey = await AESEncryptionKey.import(await deriveKey(password, settings));
-  const sealed = await aesEncryptAsync(hexToBytes(vaultKey), passwordKey);
-  const wrapped: WrappedKey = { ...settings, sealed: await sealed.combined("base64") };
+  const sealed = await aesEncryptAsync(data, passwordKey);
+  return { ...settings, sealed: await sealed.combined("base64") };
+}
+
+// Returns the original data, or null if the password is wrong.
+// AES-GCM refuses to decrypt with the wrong key, which is how a wrong password is detected.
+export async function openWithPassword(
+  wrapped: WrappedKey,
+  password: string,
+): Promise<Uint8Array | null> {
+  const passwordKey = await AESEncryptionKey.import(await deriveKey(password, wrapped));
+  try {
+    return await aesDecryptAsync(AESSealedData.fromCombined(wrapped.sealed), passwordKey);
+  } catch {
+    return null;
+  }
+}
+
+// Locks the vault key with the password and saves the locked copy.
+export async function savePasswordCopy(vaultKey: string, password: string): Promise<void> {
+  const wrapped = await sealWithPassword(hexToBytes(vaultKey), password);
   await SecureStore.setItemAsync(WRAPPED_KEY_NAME, JSON.stringify(wrapped));
 }
 
@@ -80,23 +99,14 @@ export async function isVaultSetUp(): Promise<boolean> {
 }
 
 // Returns the vault key, or null if the password is wrong.
-// AES-GCM refuses to decrypt with the wrong key, which is how a wrong password is detected.
 export async function unlockWithPassword(password: string): Promise<string | null> {
   const wrapped = parseWrappedKey(await SecureStore.getItemAsync(WRAPPED_KEY_NAME));
   if (wrapped === null) {
     throw new Error("The locked vault key is missing or damaged.");
   }
 
-  const passwordKey = await AESEncryptionKey.import(await deriveKey(password, wrapped));
-  try {
-    const vaultKey = await aesDecryptAsync(
-      AESSealedData.fromCombined(wrapped.sealed),
-      passwordKey,
-    );
-    return bytesToHex(vaultKey);
-  } catch {
-    return null;
-  }
+  const vaultKey = await openWithPassword(wrapped, password);
+  return vaultKey === null ? null : bytesToHex(vaultKey);
 }
 
 // The key of an existing vault from before the master password, or a new random one.
