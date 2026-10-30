@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Icon } from "@/components/icon";
+import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
 import { CategoryPickerRow, getCategoryPickerRows } from "@/features/categories/category-picker";
 import { getCategoryById, getCategoryPath } from "@/features/categories/category-tree";
@@ -23,6 +25,7 @@ import {
   MAX_TITLE_LENGTH,
   MAX_USERNAME_LENGTH,
 } from "@/features/credentials/credential-validation";
+import { useUndo } from "@/features/undo/undo-context";
 import type { Translations } from "@/i18n/en";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
@@ -30,6 +33,8 @@ import { useTheme } from "@/theme/use-theme";
 
 // How long the copy button shows a check mark after copying.
 const COPIED_FEEDBACK_MS = 2000;
+// How long a short message (e.g. "Choose a category before saving.") stays visible.
+const NOTICE_MS = 3000;
 
 // Creates a credential or edits one.
 // Opened with `credentialId` to edit, with `categoryId` to create inside a category,
@@ -40,8 +45,16 @@ export default function CredentialFormScreen() {
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ credentialId?: string; categoryId?: string }>();
-  const { categories, credentials, createCredential, updateCredential } = useVault();
+  const {
+    categories,
+    credentials,
+    createCredential,
+    updateCredential,
+    deleteCredential,
+    restoreCredentials,
+  } = useVault();
   const { expandWithParents } = useExpandedCategories();
+  const { offerUndo } = useUndo();
 
   // The params only set the starting values. Unknown ids fall back to "new credential".
   const existing = credentials.find((credential) => credential.id === params.credentialId);
@@ -59,6 +72,11 @@ export default function CredentialFormScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errors, setErrors] = useState<CredentialFieldErrors>({});
   const [isCopied, setIsCopied] = useState(false);
+  // True after Save was tapped without a category: the category hint turns red.
+  const [isCategoryMissing, setIsCategoryMissing] = useState(false);
+  // A short message at the bottom of the screen, or null.
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const pickerRows = getCategoryPickerRows(categories);
   const categoryPath =
@@ -76,14 +94,32 @@ export default function CredentialFormScreen() {
     return () => clearTimeout(timer);
   }, [isCopied]);
 
+  // Hides the message after a few seconds.
+  useEffect(() => {
+    if (notice === null) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   async function copy() {
     await copyPassword(password);
     setIsCopied(true);
     AccessibilityInfo.announceForAccessibility(t.credentialForm.copied);
   }
 
+  function selectCategory(id: string) {
+    setCategoryId(id);
+    setIsCategoryMissing(false);
+    setNotice(null);
+  }
+
   function save() {
-    if (categoryId === null) return;
+    // Save looks disabled without a category, but still reacts, so it can say what is missing.
+    if (categoryId === null) {
+      setIsCategoryMissing(true);
+      setNotice(t.credentialForm.categoryRequired);
+      return;
+    }
     const input = { categoryId, title, username, password };
     const result =
       existing === undefined ? createCredential(input) : updateCredential(existing.id, input);
@@ -93,6 +129,15 @@ export default function CredentialFormScreen() {
     }
     // Open the category (and the ones above it) so the saved credential is visible.
     expandWithParents(categoryId);
+    router.back();
+  }
+
+  function confirmDelete() {
+    setIsDeleteDialogOpen(false);
+    if (existing === undefined) return;
+    const deletion = deleteCredential(existing.id);
+    // The Undo bar appears on the home screen, which this form returns to.
+    offerUndo(t.deleteCredential.deleted(existing.title), () => restoreCredentials(deletion));
     router.back();
   }
 
@@ -191,9 +236,9 @@ export default function CredentialFormScreen() {
         <Pressable onPress={() => router.back()} style={styles.button} accessibilityRole="button">
           <Text style={styles.cancelText}>{t.credentialForm.cancel}</Text>
         </Pressable>
+        {/* Not `disabled`: it only looks disabled, so a tap can still explain what is missing. */}
         <Pressable
           onPress={save}
-          disabled={!canSave}
           style={[styles.button, styles.saveButton, !canSave && styles.saveButtonDisabled]}
           accessibilityRole="button"
           accessibilityState={{ disabled: !canSave }}
@@ -204,29 +249,68 @@ export default function CredentialFormScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.label}>{t.credentialForm.category}</Text>
-      <Text style={styles.selection}>{categoryPath ?? t.credentialForm.chooseCategory}</Text>
+      <Text style={styles.sectionTitle}>{t.credentialForm.category}</Text>
+      {categoryPath === null ? (
+        <Text style={[styles.categoryHint, isCategoryMissing && styles.categoryHintMissing]}>
+          {t.credentialForm.chooseCategoryHint}
+        </Text>
+      ) : (
+        <Text style={styles.selection}>{categoryPath}</Text>
+      )}
     </View>
   );
 
   return (
-    <FlatList
-      data={pickerRows}
-      keyExtractor={(row) => row.category.id}
-      ListHeaderComponent={header}
-      // Lets a tap on a list row work while the keyboard is open.
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
-      renderItem={({ item }) => (
-        <CategoryPickerRow
-          icon="folder"
-          label={item.category.name}
-          depth={item.depth}
-          isSelected={categoryId === item.category.id}
-          onPress={() => setCategoryId(item.category.id)}
-        />
-      )}
-    />
+    <View style={styles.screen}>
+      {/* Only an existing password can be deleted, so the header button appears when editing. */}
+      <Stack.Screen
+        options={{
+          headerRight:
+            existing === undefined
+              ? undefined
+              : () => (
+                  <Pressable
+                    onPress={() => setIsDeleteDialogOpen(true)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t.credentialForm.delete}
+                  >
+                    <Icon name="delete" color={colors.error} />
+                  </Pressable>
+                ),
+        }}
+      />
+
+      <FlatList
+        data={pickerRows}
+        keyExtractor={(row) => row.category.id}
+        ListHeaderComponent={header}
+        // Lets a tap on a list row work while the keyboard is open.
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
+        renderItem={({ item }) => (
+          <CategoryPickerRow
+            icon="folder"
+            label={item.category.name}
+            depth={item.depth}
+            isSelected={categoryId === item.category.id}
+            onPress={() => selectCategory(item.category.id)}
+          />
+        )}
+      />
+
+      {notice !== null && <Snackbar message={notice} bottom={insets.bottom + 16} />}
+
+      <ConfirmDialog
+        visible={isDeleteDialogOpen}
+        title={t.deleteCredential.title}
+        message={t.deleteCredential.message(existing?.title ?? "")}
+        cancelLabel={t.deleteCredential.cancel}
+        confirmLabel={t.deleteCredential.confirm}
+        onCancel={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+      />
+    </View>
   );
 }
 
@@ -253,8 +337,26 @@ function createStyles(colors: Palette) {
   };
 
   return StyleSheet.create({
+    screen: {
+      flex: 1,
+    },
     content: {
       padding: 16,
+    },
+    sectionTitle: {
+      marginTop: 16,
+      fontSize: 18,
+      fontWeight: "600",
+      color: colors.onSurface,
+    },
+    // Bold and coloured, so a missing category is hard to overlook.
+    categoryHint: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.primary,
+    },
+    categoryHintMissing: {
+      color: colors.error,
     },
     form: {
       gap: 8,

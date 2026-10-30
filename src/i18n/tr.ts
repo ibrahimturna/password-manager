@@ -36,7 +36,9 @@ export const tr: Translations = {
     copyPassword: "Şifreyi kopyala",
     copied: "Şifre kopyalandı",
     category: "Kategori",
-    chooseCategory: "Aşağıdaki listeden bir kategori seçin",
+    chooseCategoryHint: "Bu şifre için bir kategori seçin",
+    categoryRequired: "Kaydetmeden önce bir kategori seçin.",
+    delete: "Şifreyi sil",
     cancel: "İptal",
     save: "Kaydet",
     errors: {
@@ -76,6 +78,14 @@ export const tr: Translations = {
       tooLong: (max: number) => `Ad en fazla ${max} karakter olabilir.`,
       duplicate: "Burada bu adda bir kategori zaten var.",
     },
+  },
+  deleteCredential: {
+    title: "Şifreyi sil",
+    message: (title: string) => `“${title}” silinecek.`,
+    cancel: "İptal",
+    confirm: "Sil",
+    deleted: (title: string) => `“${title}” silindi`,
+    undo: "Geri al",
   },
   settings: {
     title: "Ayarlar",

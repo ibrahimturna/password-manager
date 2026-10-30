@@ -7,16 +7,20 @@ import { VaultProvider } from "@/data/vault-context";
 import { ExpandedCategoriesProvider } from "@/features/categories/expanded-categories-context";
 import { SettingsButton } from "@/features/settings/settings-button";
 import { SettingsProvider } from "@/features/settings/settings-context";
+import { UndoProvider } from "@/features/undo/undo-context";
 import { useTranslation } from "@/i18n/use-translation";
 import { useTheme } from "@/theme/use-theme";
 
 export default function RootLayout() {
   return (
-    // Every screen inside the providers shares the same settings, vault data and open/closed tree state.
+    // Every screen inside the providers shares the same settings, vault data, open/closed
+    // tree state and pending Undo.
     <SettingsProvider>
       <VaultProvider>
         <ExpandedCategoriesProvider>
-          <AppStack />
+          <UndoProvider>
+            <AppStack />
+          </UndoProvider>
         </ExpandedCategoriesProvider>
       </VaultProvider>
     </SettingsProvider>

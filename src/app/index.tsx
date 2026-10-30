@@ -6,19 +6,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/icon";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
-import type { CategoryDeletion } from "@/features/categories/category-mutations";
 import { getCategoryById, getSubtreeRows, type TreeRow } from "@/features/categories/category-tree";
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
 import { DeleteCategoryDialog } from "@/features/categories/delete-category-dialog";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 import { copyPassword } from "@/features/credentials/copy-password";
+import { useUndo } from "@/features/undo/undo-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
 const FLOATING_BUTTON_SIZE = 56;
-// How long a delete can be undone.
-const UNDO_DURATION_MS = 5000;
 // How long a copy button shows a check mark after copying.
 const COPIED_FEEDBACK_MS = 2000;
 
@@ -45,11 +43,7 @@ export default function HomeScreen() {
   } | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // The last delete, while it can still be undone.
-  const [pendingUndo, setPendingUndo] = useState<{
-    deletion: CategoryDeletion;
-    name: string;
-  } | null>(null);
+  const { pendingUndo, offerUndo, runUndo, dismissUndo } = useUndo();
 
   const hasExpanded = expandedIds.size > 0;
 
@@ -98,35 +92,24 @@ export default function HomeScreen() {
     const deletion = deleteCategory(deleteTarget.category.id);
     // Deleted categories must not stay in the open/closed state.
     forgetCategories(deletion.categories.map((removed) => removed.item.id));
-    setPendingUndo({ deletion, name: deleteTarget.category.name });
+    offerUndo(t.deleteCategory.deleted(deleteTarget.category.name), () =>
+      restoreDeletion(deletion),
+    );
   }
-
-  function undoDelete() {
-    if (pendingUndo === null) return;
-    restoreDeletion(pendingUndo.deletion);
-    setPendingUndo(null);
-  }
-
-  // Ends the Undo chance after a few seconds. A new delete restarts the timer; the cleanup
-  // function cancels the old timer so it cannot end the new Undo early.
-  useEffect(() => {
-    if (pendingUndo === null) return;
-    const timer = setTimeout(() => setPendingUndo(null), UNDO_DURATION_MS);
-    return () => clearTimeout(timer);
-  }, [pendingUndo]);
 
   // The returned function runs when this screen loses focus (another screen opens on top),
   // so a menu is never left open behind the form or the settings screen.
-  // Undo also ends there: the vault can only change on another screen, so Undo always
-  // restores into exactly the state the delete left behind.
+  // An older Undo also ends there: the vault can only change on another screen, so Undo always
+  // restores into exactly the state the delete left behind. (A password deleted on the form
+  // screen offers its Undo after this cleanup has already run, so that Undo survives.)
   useFocusEffect(
     useCallback(() => {
       return () => {
         setMenuCategoryId(null);
         setIsAddMenuOpen(false);
-        setPendingUndo(null);
+        dismissUndo();
       };
-    }, []),
+    }, [dismissUndo]),
   );
 
   return (
@@ -175,9 +158,8 @@ export default function HomeScreen() {
 
       {pendingUndo !== null && (
         <Snackbar
-          message={t.deleteCategory.deleted(pendingUndo.name)}
-          actionLabel={t.deleteCategory.undo}
-          onAction={undoDelete}
+          message={pendingUndo.message}
+          action={{ label: t.deleteCategory.undo, onPress: runUndo }}
           // Sits above the round button, as Material recommends.
           bottom={insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12}
         />

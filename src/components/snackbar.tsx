@@ -5,15 +5,15 @@ import { useTheme } from "@/theme/use-theme";
 
 type SnackbarProps = {
   message: string;
-  actionLabel: string;
-  onAction: () => void;
+  // An optional button, such as "Undo".
+  action?: { label: string; onPress: () => void };
   // Distance from the bottom of the screen, so the bar can sit above other buttons.
   bottom: number;
 };
 
-// A short message bar at the bottom of the screen with one action, like Material's Snackbar.
+// A short message bar at the bottom of the screen, like Material's Snackbar.
 // The screen decides when to show and hide it.
-export function Snackbar({ message, actionLabel, onAction, bottom }: SnackbarProps) {
+export function Snackbar({ message, action, bottom }: SnackbarProps) {
   const styles = createStyles(useTheme().colors);
 
   return (
@@ -22,9 +22,11 @@ export function Snackbar({ message, actionLabel, onAction, bottom }: SnackbarPro
       <Text style={styles.message} numberOfLines={2}>
         {message}
       </Text>
-      <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button">
-        <Text style={styles.action}>{actionLabel}</Text>
-      </Pressable>
+      {action !== undefined && (
+        <Pressable onPress={action.onPress} hitSlop={8} accessibilityRole="button">
+          <Text style={styles.action}>{action.label}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

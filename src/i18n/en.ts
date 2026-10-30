@@ -35,7 +35,9 @@ export const en = {
     copyPassword: "Copy password",
     copied: "Password copied",
     category: "Category",
-    chooseCategory: "Choose a category from the list below",
+    chooseCategoryHint: "Choose a category for this password",
+    categoryRequired: "Choose a category before saving.",
+    delete: "Delete password",
     cancel: "Cancel",
     save: "Save",
     errors: {
@@ -75,6 +77,14 @@ export const en = {
       tooLong: (max: number) => `Name can be at most ${max} characters.`,
       duplicate: "A category with this name already exists here.",
     },
+  },
+  deleteCredential: {
+    title: "Delete password",
+    message: (title: string) => `“${title}” will be deleted.`,
+    cancel: "Cancel",
+    confirm: "Delete",
+    deleted: (title: string) => `“${title}” deleted`,
+    undo: "Undo",
   },
   settings: {
     title: "Settings",
