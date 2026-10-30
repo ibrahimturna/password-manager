@@ -1,7 +1,9 @@
 import type { Category, Credential } from "@/types/vault";
 
 import {
+  expandWithParents,
   getCategoryById,
+  getCategoryPath,
   getChildCategories,
   getCredentialsInCategory,
   getDescendantIds,
@@ -256,5 +258,51 @@ describe("toggleExpanded", () => {
 
     expect(result).not.toBe(original); // a different object…
     expect([...original]).toEqual(["banks"]); // …and the original is untouched
+  });
+});
+
+describe("getCategoryPath", () => {
+  it("returns the category and its parents, from the top level down", () => {
+    expect(ids(getCategoryPath(testCategories, "stocks"))).toEqual(["banks", "investments", "stocks"]);
+  });
+
+  it("returns only the category itself for a top-level category", () => {
+    expect(ids(getCategoryPath(testCategories, "banks"))).toEqual(["banks"]);
+  });
+
+  it("returns an empty list for a missing category", () => {
+    expect(getCategoryPath(testCategories, "missing")).toEqual([]);
+  });
+
+  it("stops instead of looping forever when categories point at each other", () => {
+    const loop: Category[] = [
+      { id: "a", name: "A", parentId: "b" },
+      { id: "b", name: "B", parentId: "a" },
+    ];
+
+    expect(ids(getCategoryPath(loop, "a"))).toEqual(["b", "a"]);
+  });
+});
+
+describe("expandWithParents", () => {
+  it("opens the category and every category above it", () => {
+    const result = expandWithParents(new Set(), "stocks", testCategories);
+
+    expect([...result].sort()).toEqual(["banks", "investments", "stocks"]);
+  });
+
+  it("keeps categories that were already open", () => {
+    const result = expandWithParents(new Set(["social"]), "investments", testCategories);
+
+    expect([...result].sort()).toEqual(["banks", "investments", "social"]);
+  });
+
+  it("returns a new Set and does not change the original", () => {
+    const original: ReadonlySet<string> = new Set();
+
+    const result = expandWithParents(original, "banks", testCategories);
+
+    expect(result).not.toBe(original);
+    expect(original.size).toBe(0);
   });
 });

@@ -66,6 +66,38 @@ export function toggleExpanded(
   return next;
 }
 
+// Returns the category and all the categories above it, from the top level down.
+// Example: "Borsa" → [Banka Hesaplarım, Yatırım Hesapları, Borsa].
+// Returns [] if the category does not exist.
+export function getCategoryPath(categories: Category[], categoryId: string): Category[] {
+  const path: Category[] = [];
+  // Guards against malformed data where categories point at each other in a loop.
+  const visited = new Set<string>();
+  let current = getCategoryById(categories, categoryId);
+
+  while (current !== undefined && !visited.has(current.id)) {
+    visited.add(current.id);
+    path.unshift(current); // add to the front, because we walk upward
+    current = current.parentId === null ? undefined : getCategoryById(categories, current.parentId);
+  }
+
+  return path;
+}
+
+// Opens a category and every category above it, so its contents become visible in the tree.
+// Returns a new Set and never changes `expandedIds`.
+export function expandWithParents(
+  expandedIds: ReadonlySet<string>,
+  categoryId: string,
+  categories: Category[],
+): Set<string> {
+  const next = new Set(expandedIds);
+  for (const category of getCategoryPath(categories, categoryId)) {
+    next.add(category.id);
+  }
+  return next;
+}
+
 // One visible line in the expandable tree. `depth` is the indentation level (0 = top level).
 export type TreeRow =
   | { kind: "category"; category: Category; depth: number; isExpanded: boolean }

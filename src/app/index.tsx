@@ -1,24 +1,14 @@
-import { useState } from "react";
+import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useVault } from "@/data/vault-context";
-import { toggleExpanded } from "@/features/categories/category-tree";
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
+import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 
 export default function HomeScreen() {
-  const { categories } = useVault();
-
-  // Which categories are currently open. A Set makes "is this one open?" a quick lookup.
-  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
-
-  function toggleCategory(categoryId: string) {
-    // `current` is the latest state; toggleExpanded returns a new Set, so React re-renders.
-    setExpandedIds((current) => toggleExpanded(current, categoryId, categories));
-  }
-
-  function collapseAll() {
-    setExpandedIds(new Set());
-  }
+  const { expandedIds, toggleCategory, collapseAll } = useExpandedCategories();
+  // Keeps the round button above Android's navigation bar.
+  const insets = useSafeAreaInsets();
 
   const hasExpanded = expandedIds.size > 0;
 
@@ -39,7 +29,25 @@ export default function HomeScreen() {
         </Text>
       </Pressable>
 
-      <CategoryTreeList expandedIds={expandedIds} onToggleCategory={toggleCategory} />
+      <CategoryTreeList
+        expandedIds={expandedIds}
+        onToggleCategory={toggleCategory}
+        onAddSubcategory={(parentId) =>
+          router.push({ pathname: "/category-form", params: { mode: "create", categoryId: parentId } })
+        }
+        onRenameCategory={(categoryId) =>
+          router.push({ pathname: "/category-form", params: { mode: "rename", categoryId } })
+        }
+      />
+
+      <Pressable
+        onPress={() => router.push("/category-form")}
+        style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
+        accessibilityRole="button"
+        accessibilityLabel="New category or rename"
+      >
+        <Text style={styles.floatingButtonText}>+</Text>
+      </Pressable>
     </View>
   );
 }
@@ -64,5 +72,21 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: "#aaa",
+  },
+  floatingButton: {
+    position: "absolute",
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28, // half the size makes a circle
+    backgroundColor: "#208AEF",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4, // Android shadow
+  },
+  floatingButtonText: {
+    color: "#fff",
+    fontSize: 30,
+    lineHeight: 32,
   },
 });

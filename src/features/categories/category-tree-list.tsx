@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useVault } from "@/data/vault-context";
@@ -6,33 +7,65 @@ import type { Category, Credential } from "@/types/vault";
 import { getVisibleRows, type TreeRow } from "./category-tree";
 
 const INDENT_PER_LEVEL = 20;
+// Space below the last row, so the round "+" button does not cover it.
+const BOTTOM_SPACE_FOR_BUTTON = 88;
 
 type CategoryTreeListProps = {
   expandedIds: ReadonlySet<string>;
   onToggleCategory: (categoryId: string) => void;
+  onAddSubcategory: (parentId: string) => void;
+  onRenameCategory: (categoryId: string) => void;
 };
 
-// Shows the whole vault as an expandable tree. Tapping a category expands or collapses it.
+// Shows the whole vault as an expandable tree. Tapping a category expands or collapses it;
+// its "⋯" button opens a small list of actions under the row.
 // This component does not own the expanded state; the screen passes it in.
-export function CategoryTreeList({ expandedIds, onToggleCategory }: CategoryTreeListProps) {
+export function CategoryTreeList({
+  expandedIds,
+  onToggleCategory,
+  onAddSubcategory,
+  onRenameCategory,
+}: CategoryTreeListProps) {
   const { categories, credentials } = useVault();
   const rows = getVisibleRows(categories, credentials, expandedIds);
+  // The category whose "⋯" actions are open. Only one at a time.
+  const [menuCategoryId, setMenuCategoryId] = useState<string | null>(null);
+
+  function toggleMenu(categoryId: string) {
+    setMenuCategoryId((current) => (current === categoryId ? null : categoryId));
+  }
 
   return (
     <FlatList
       data={rows}
+      // FlatList only redraws rows when `data` changes. The open menu is not part of `data`,
+      // so `extraData` tells FlatList to redraw when it changes too.
+      extraData={menuCategoryId}
       keyExtractor={getRowKey}
+      contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
       renderItem={({ item }) => {
         switch (item.kind) {
-          case "category":
+          case "category": {
+            const categoryId = item.category.id;
             return (
               <CategoryRow
                 category={item.category}
                 depth={item.depth}
                 isExpanded={item.isExpanded}
-                onPress={() => onToggleCategory(item.category.id)}
+                isMenuOpen={menuCategoryId === categoryId}
+                onPress={() => onToggleCategory(categoryId)}
+                onPressMenu={() => toggleMenu(categoryId)}
+                onAddSubcategory={() => {
+                  setMenuCategoryId(null);
+                  onAddSubcategory(categoryId);
+                }}
+                onRename={() => {
+                  setMenuCategoryId(null);
+                  onRenameCategory(categoryId);
+                }}
               />
             );
+          }
           case "credential":
             return <CredentialRow credential={item.credential} depth={item.depth} />;
           case "empty":
@@ -63,20 +96,64 @@ type CategoryRowProps = {
   category: Category;
   depth: number;
   isExpanded: boolean;
+  isMenuOpen: boolean;
   onPress: () => void;
+  onPressMenu: () => void;
+  onAddSubcategory: () => void;
+  onRename: () => void;
 };
 
-function CategoryRow({ category, depth, isExpanded, onPress }: CategoryRowProps) {
+function CategoryRow({
+  category,
+  depth,
+  isExpanded,
+  isMenuOpen,
+  onPress,
+  onPressMenu,
+  onAddSubcategory,
+  onRename,
+}: CategoryRowProps) {
+  const indent = { paddingLeft: depth * INDENT_PER_LEVEL };
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.row, { paddingLeft: depth * INDENT_PER_LEVEL }]}
-      accessibilityRole="button"
-      accessibilityState={{ expanded: isExpanded }}
-    >
-      <Text style={styles.rowTitle}>
-        {isExpanded ? "▾" : "▸"} 📁 {category.name}
-      </Text>
+    <View style={styles.row}>
+      <View style={styles.categoryLine}>
+        <Pressable
+          onPress={onPress}
+          style={[styles.categoryName, indent]}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isExpanded }}
+        >
+          <Text style={styles.rowTitle}>
+            {isExpanded ? "▾" : "▸"} 📁 {category.name}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onPressMenu}
+          hitSlop={8}
+          style={styles.menuButton}
+          accessibilityRole="button"
+          accessibilityLabel={`Actions for ${category.name}`}
+          accessibilityState={{ expanded: isMenuOpen }}
+        >
+          <Text style={styles.menuButtonText}>⋯</Text>
+        </Pressable>
+      </View>
+
+      {isMenuOpen && (
+        <View style={[styles.menu, indent]}>
+          <MenuAction label="➕ Add subcategory" onPress={onAddSubcategory} />
+          <MenuAction label="✏️ Rename" onPress={onRename} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function MenuAction({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.menuAction} accessibilityRole="button">
+      <Text style={styles.menuActionText}>{label}</Text>
     </Pressable>
   );
 }
@@ -84,7 +161,7 @@ function CategoryRow({ category, depth, isExpanded, onPress }: CategoryRowProps)
 // Shows title and username only. The password is never rendered in the tree.
 function CredentialRow({ credential, depth }: { credential: Credential; depth: number }) {
   return (
-    <View style={[styles.row, { paddingLeft: depth * INDENT_PER_LEVEL }]}>
+    <View style={[styles.row, styles.credentialRow, { paddingLeft: depth * INDENT_PER_LEVEL }]}>
       <Text style={styles.rowTitle}>🔑 {credential.title}</Text>
       <Text style={styles.rowSubtitle}>{credential.username ?? "No username"}</Text>
     </View>
@@ -93,9 +170,38 @@ function CredentialRow({ credential, depth }: { credential: Credential; depth: n
 
 const styles = StyleSheet.create({
   row: {
-    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#ccc",
+  },
+  categoryLine: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  categoryName: {
+    flex: 1,
+    paddingVertical: 12,
+  },
+  menuButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  menuButtonText: {
+    fontSize: 22,
+    color: "#666",
+  },
+  menu: {
+    paddingBottom: 8,
+  },
+  menuAction: {
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  menuActionText: {
+    fontSize: 16,
+    color: "#208AEF",
+  },
+  credentialRow: {
+    paddingVertical: 12,
   },
   rowTitle: {
     fontSize: 18,
