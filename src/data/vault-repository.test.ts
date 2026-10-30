@@ -225,16 +225,3 @@ describe("credentials", () => {
     expect(() => repository.deleteCredential("missing")).toThrow();
   });
 });
-
-describe("replaceAll", () => {
-  it("replaces all folders and credentials", () => {
-    const repository = makeRepository();
-    repository.createFolder("E-mail", null);
-
-    const folders = [{ id: "only", name: "Only", parentId: null }];
-    repository.replaceAll({ folders, credentials: [] });
-
-    expect(repository.getFolders()).toEqual(folders);
-    expect(repository.getCredentials()).toEqual([]);
-  });
-});

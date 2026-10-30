@@ -9,9 +9,18 @@ import {
   type FolderNameError,
   MAX_FOLDER_NAME_LENGTH,
 } from "@/features/folders/folder-name";
-import { FolderPickerRow, getFolderPickerRows } from "@/features/folders/folder-picker";
+import {
+  type FolderPickerItem,
+  FolderPickerRow,
+  getFolderPickerRows,
+} from "@/features/folders/folder-picker";
 import { getFolderById, getFolderPath } from "@/features/folders/folder-tree";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
+import {
+  useKeptRoute,
+  useKeptScroll,
+  useKeptState,
+} from "@/features/lock/use-kept-state";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Translations } from "@/i18n/en";
 import type { Palette } from "@/theme/colors";
@@ -31,6 +40,8 @@ export default function FolderFormScreen() {
   const { folders, createFolder, renameFolder } = useVault();
   const { expandWithParents } = useExpandedFolders();
   const insets = useSafeAreaInsets();
+  useKeptRoute({ pathname: "/folder-form", params });
+  const keptScroll = useKeptScroll<FolderPickerItem>("folder-form.scroll");
 
   // The params only set the starting values. Unknown values fall back to "new top-level folder".
   const initialFolder =
@@ -38,10 +49,17 @@ export default function FolderFormScreen() {
   const initialMode: Mode =
     params.mode === "rename" && initialFolder !== undefined ? "rename" : "create";
 
-  const [mode, setMode] = useState<Mode>(initialMode);
+  // What the user chose and typed comes back after a lock.
+  const [mode, setMode] = useKeptState<Mode>("folder-form.mode", initialMode);
   // create: the parent (null = top level). rename: the folder to rename (null = none chosen yet).
-  const [selectedId, setSelectedId] = useState<string | null>(initialFolder?.id ?? null);
-  const [name, setName] = useState(initialMode === "rename" ? (initialFolder?.name ?? "") : "");
+  const [selectedId, setSelectedId] = useKeptState<string | null>(
+    "folder-form.selectedId",
+    initialFolder?.id ?? null,
+  );
+  const [name, setName] = useKeptState(
+    "folder-form.name",
+    initialMode === "rename" ? (initialFolder?.name ?? "") : "",
+  );
   const [error, setError] = useState<FolderNameError | null>(null);
 
   const pickerRows = getFolderPickerRows(folders);
@@ -170,6 +188,7 @@ export default function FolderFormScreen() {
 
   return (
     <FlatList
+      {...keptScroll}
       data={pickerRows}
       keyExtractor={(row) => row.folder.id}
       ListHeaderComponent={header}

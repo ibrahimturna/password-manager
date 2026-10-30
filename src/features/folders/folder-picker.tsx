@@ -27,6 +27,8 @@ type FolderPickerRowProps = {
 };
 
 // One choice in a folder list. Used by the folder form and the credential form.
+export type FolderPickerItem = ReturnType<typeof getFolderPickerRows>[number];
+
 export function FolderPickerRow({ icon, label, depth, isSelected, onPress }: FolderPickerRowProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);

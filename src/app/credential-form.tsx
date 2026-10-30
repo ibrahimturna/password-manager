@@ -13,11 +13,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Icon } from "@/components/icon";
+import { PasswordInput } from "@/components/password-input";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
 import { FolderPickerRow, getFolderPickerRows } from "@/features/folders/folder-picker";
 import { getFolderById, getFolderPath } from "@/features/folders/folder-tree";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
+import type { FolderPickerItem } from "@/features/folders/folder-picker";
+import {
+  useKeptRoute,
+  useKeptScroll,
+  useKeptState,
+} from "@/features/lock/use-kept-state";
 import { copyPassword } from "@/features/credentials/copy-password";
 import {
   type CredentialFieldErrors,
@@ -55,6 +62,8 @@ export default function CredentialFormScreen() {
   } = useVault();
   const { expandWithParents } = useExpandedFolders();
   const { offerUndo } = useUndo();
+  useKeptRoute({ pathname: "/credential-form", params });
+  const keptScroll = useKeptScroll<FolderPickerItem>("credential-form.scroll");
 
   // The params only set the starting values. Unknown ids fall back to "new credential".
   const existing = credentials.find((credential) => credential.id === params.credentialId);
@@ -64,12 +73,20 @@ export default function CredentialFormScreen() {
       ? params.folderId
       : null);
 
-  const [title, setTitle] = useState(existing?.title ?? "");
-  const [username, setUsername] = useState(existing?.username ?? "");
-  const [password, setPassword] = useState(existing?.password ?? "");
-  const [folderId, setFolderId] = useState<string | null>(startFolderId);
-  // Always starts hidden; the eye button shows it while editing.
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  // What the user typed comes back after a lock.
+  const [title, setTitle] = useKeptState("credential-form.title", existing?.title ?? "");
+  const [username, setUsername] = useKeptState(
+    "credential-form.username",
+    existing?.username ?? "",
+  );
+  const [password, setPassword] = useKeptState(
+    "credential-form.password",
+    existing?.password ?? "",
+  );
+  const [folderId, setFolderId] = useKeptState<string | null>(
+    "credential-form.folderId",
+    startFolderId,
+  );
   const [errors, setErrors] = useState<CredentialFieldErrors>({});
   const [isCopied, setIsCopied] = useState(false);
   // True after Save was tapped without a folder: the folder hint turns red.
@@ -185,35 +202,17 @@ export default function CredentialFormScreen() {
       )}
 
       <Text style={styles.label}>{t.credentialForm.password}</Text>
-      {/* The border sits on this wrapper, so the input's own style never changes. */}
-      <View style={styles.passwordField}>
-        <TextInput
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            setErrors((current) => ({ ...current, password: undefined }));
-          }}
-          secureTextEntry={!isPasswordVisible}
-          maxLength={MAX_PASSWORD_LENGTH}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="off"
-          importantForAutofill="no"
-          selectionColor={colors.primary}
-          style={styles.passwordInput}
-          accessibilityLabel={t.credentialForm.password}
-        />
-        <Pressable
-          onPress={() => setIsPasswordVisible((visible) => !visible)}
-          hitSlop={8}
-          style={styles.fieldButton}
-          accessibilityRole="button"
-          accessibilityLabel={
-            isPasswordVisible ? t.credentialForm.hidePassword : t.credentialForm.showPassword
-          }
-        >
-          <Icon name={isPasswordVisible ? "hide" : "show"} color={colors.onSurfaceVariant} />
-        </Pressable>
+      <PasswordInput
+        value={password}
+        onChangeText={(text) => {
+          setPassword(text);
+          setErrors((current) => ({ ...current, password: undefined }));
+        }}
+        maxLength={MAX_PASSWORD_LENGTH}
+        label={t.credentialForm.password}
+        showLabel={t.credentialForm.showPassword}
+        hideLabel={t.credentialForm.hidePassword}
+      >
         <Pressable
           onPress={copy}
           disabled={password === ""}
@@ -227,7 +226,7 @@ export default function CredentialFormScreen() {
             color={password === "" ? colors.disabledContent : colors.primary}
           />
         </Pressable>
-      </View>
+      </PasswordInput>
       {errors.password !== undefined && (
         <Text style={styles.error}>{getPasswordError(errors.password, t)}</Text>
       )}
@@ -282,6 +281,7 @@ export default function CredentialFormScreen() {
       />
 
       <FlatList
+        {...keptScroll}
         data={pickerRows}
         keyExtractor={(row) => row.folder.id}
         ListHeaderComponent={header}
@@ -371,19 +371,6 @@ function createStyles(colors: Palette) {
     },
     input: {
       ...field,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      fontSize: 18,
-      color: colors.onSurface,
-    },
-    passwordField: {
-      ...field,
-      flexDirection: "row",
-      alignItems: "center",
-      paddingRight: 4,
-    },
-    passwordInput: {
-      flex: 1,
       paddingHorizontal: 12,
       paddingVertical: 10,
       fontSize: 18,

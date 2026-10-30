@@ -25,6 +25,7 @@ import { FolderTreeList } from "@/features/folders/folder-tree-list";
 import { DeleteFolderDialog } from "@/features/folders/delete-folder-dialog";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
 import { copyPassword } from "@/features/credentials/copy-password";
+import { useKeptState } from "@/features/lock/use-kept-state";
 import { searchVault } from "@/features/search/search";
 import { useUndo } from "@/features/undo/undo-context";
 import { useTranslation } from "@/i18n/use-translation";
@@ -65,10 +66,13 @@ export default function HomeScreen() {
   // Search. The results are the normal tree, cut down to the matches (see searchVault).
   // React Native 0.88 types a TextInput ref with TextInputInstance (it has .focus()).
   const searchInputRef = useRef<TextInputInstance>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useKeptState("home.query", "");
   // Open/closed folders while searching. Separate from the normal tree's state, so clearing
   // the search brings the tree back exactly as it was.
-  const [searchExpandedIds, setSearchExpandedIds] = useState<ReadonlySet<string>>(new Set());
+  const [searchExpandedIds, setSearchExpandedIds] = useKeptState<ReadonlySet<string>>(
+    "home.searchExpandedIds",
+    new Set(),
+  );
   const search = searchVault(folders, credentials, query);
   const isSearching = search !== null;
 

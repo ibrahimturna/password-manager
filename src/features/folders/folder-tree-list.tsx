@@ -2,6 +2,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Icon, type IconName } from "@/components/icon";
 import { useVault } from "@/data/vault-context";
+import { useKeptScroll } from "@/features/lock/use-kept-state";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
@@ -64,9 +65,11 @@ export function FolderTreeList({
       ? credentials
       : credentials.filter((credential) => filter.credentialIds.has(credential.id));
   const rows = getVisibleRows(shownFolders, shownCredentials, expandedIds);
+  const keptScroll = useKeptScroll<TreeRow>("home.scroll");
 
   return (
     <FlatList
+      {...keptScroll}
       data={rows}
       // FlatList only redraws rows when `data` changes. The open menu and the copied check mark
       // are not part of `data`, so `extraData` tells FlatList to redraw when they change too.
@@ -74,7 +77,10 @@ export function FolderTreeList({
       keyExtractor={getRowKey}
       contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
       // Scrolling counts as "doing something else", so it closes an open menu.
-      onScrollBeginDrag={onCloseMenu}
+      onScrollBeginDrag={() => {
+        keptScroll.onScrollBeginDrag();
+        onCloseMenu();
+      }}
       // While searching, rows can be tapped without first closing the keyboard,
       // and scrolling the results closes the keyboard.
       keyboardShouldPersistTaps="handled"

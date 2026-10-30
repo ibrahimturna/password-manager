@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import { VaultProvider } from "@/data/vault-context";
 import { ExpandedFoldersProvider } from "@/features/folders/expanded-folders-context";
+import { useRestoreRoutes } from "@/features/lock/use-kept-state";
 import { SettingsButton } from "@/features/settings/settings-button";
 import { SettingsProvider } from "@/features/settings/settings-context";
 import { UndoProvider } from "@/features/undo/undo-context";
@@ -16,13 +17,13 @@ export default function RootLayout() {
     // Every screen inside the providers shares the same settings, vault data, open/closed
     // tree state and pending Undo.
     <SettingsProvider>
-      <VaultProvider>
-        <ExpandedFoldersProvider>
+      <ExpandedFoldersProvider>
+        <VaultProvider>
           <UndoProvider>
             <AppStack />
           </UndoProvider>
-        </ExpandedFoldersProvider>
-      </VaultProvider>
+        </VaultProvider>
+      </ExpandedFoldersProvider>
     </SettingsProvider>
   );
 }
@@ -32,6 +33,7 @@ export default function RootLayout() {
 function AppStack() {
   const t = useTranslation();
   const { scheme, colors } = useTheme();
+  const isRestoring = useRestoreRoutes();
 
   // Android shows the native "root view" behind all screens while one slides in. It was white
   // (even with the phone in dark mode), which flashed during transitions in our dark theme,
@@ -60,7 +62,7 @@ function AppStack() {
     <ThemeProvider value={navigationTheme}>
       {/* Dark icons on a light app, light icons on a dark app. */}
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      <Stack>
+      <Stack screenOptions={isRestoring ? { animation: "none" } : undefined}>
         <Stack.Screen
           name="index"
           options={{ title: t.app.title, headerRight: () => <SettingsButton /> }}
@@ -72,6 +74,10 @@ function AppStack() {
         <Stack.Screen
           name="credential-form"
           options={{ title: t.credentialForm.title, presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="master-password"
+          options={{ title: t.masterPasswordForm.title, presentation: "modal" }}
         />
         <Stack.Screen name="settings" options={{ title: t.settings.title }} />
       </Stack>

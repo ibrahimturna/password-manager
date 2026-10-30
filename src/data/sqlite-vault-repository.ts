@@ -56,6 +56,5 @@ export function createSqliteVaultRepository(
     updateCredential: (id, input) => saved(() => memory.updateCredential(id, input)),
     deleteCredential: (id) => saved(() => memory.deleteCredential(id)),
     restoreCredentials: (deletion) => saved(() => memory.restoreCredentials(deletion)),
-    replaceAll: (contents) => saved(() => memory.replaceAll(contents)),
   };
 }

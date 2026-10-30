@@ -54,9 +54,6 @@ export type VaultRepository = {
   // Returns what was removed, so the delete can be undone with restoreCredentials.
   deleteCredential(id: string): CredentialDeletion;
   restoreCredentials(deletion: CredentialDeletion): void;
-
-  // Replaces the whole vault. Used by "Reset to sample data" until Milestone 7.
-  replaceAll(contents: VaultContents): void;
 };
 
 export type VaultContents = {
@@ -176,10 +173,6 @@ export function createInMemoryVaultRepository(
       return result.removed;
     },
 
-    replaceAll(contents) {
-      folders = contents.folders;
-      credentials = contents.credentials;
-    },
 
     restoreCredentials(deletion) {
       credentials = restoreCredentials(credentials, deletion);

@@ -1,30 +1,27 @@
 import { router } from "expo-router";
-import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { PasswordInput } from "@/components/password-input";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useVault } from "@/data/vault-context";
-import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
+import { useKeptRoute } from "@/features/lock/use-kept-state";
 import { useSettings } from "@/features/settings/settings-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
 export default function SettingsScreen() {
-  const { language, theme, setLanguage, setTheme } = useSettings();
+  const { language, theme, autoLock, setLanguage, setTheme, setAutoLock } = useSettings();
+  const { lock, masterPassword, deviceLockAvailable, deviceLockOn, setDeviceLockOn, verifyUser } =
+    useVault();
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
-  const { resetToSampleData } = useVault();
-  const { collapseAll } = useExpandedFolders();
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  useKeptRoute("/settings");
 
-  // For testing only; this goes away with the real vault in Milestone 7.
-  function confirmReset() {
-    setIsResetDialogOpen(false);
-    resetToSampleData();
-    collapseAll();
-    router.back();
+  // Turning the phone lock on first checks that it really works.
+  async function changeDeviceLock(on: boolean) {
+    if (on && !(await verifyUser(t.lock.devicePrompt))) return;
+    await setDeviceLockOn(on);
   }
 
   return (
@@ -56,25 +53,54 @@ export default function SettingsScreen() {
         />
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t.settings.security}</Text>
+
+        <Text style={styles.label}>{t.settings.masterPassword}</Text>
+        <PasswordInput
+          value={masterPassword}
+          onChangeText={() => undefined}
+          editable={false}
+          label={t.settings.masterPassword}
+          showLabel={t.lock.showPassword}
+          hideLabel={t.lock.hidePassword}
+        />
+        <Pressable
+          onPress={() => router.push("/master-password")}
+          style={styles.textButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.textButtonLabel}>{t.settings.changeMasterPassword}</Text>
+        </Pressable>
+
+        {deviceLockAvailable && (
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>{t.settings.deviceLock}</Text>
+            <Switch
+              value={deviceLockOn}
+              onValueChange={changeDeviceLock}
+              accessibilityLabel={t.settings.deviceLock}
+            />
+          </View>
+        )}
+
+        <Text style={styles.label}>{t.settings.autoLock}</Text>
+        <SegmentedControl
+          options={[
+            { value: "immediately", label: t.settings.immediately },
+            { value: "1min", label: t.settings.oneMinute },
+            { value: "5min", label: t.settings.fiveMinutes },
+          ]}
+          value={autoLock}
+          onChange={setAutoLock}
+        />
+
+        <Pressable onPress={lock} style={styles.textButton} accessibilityRole="button">
+          <Text style={styles.textButtonLabel}>{t.settings.lockNow}</Text>
+        </Pressable>
+      </View>
+
       <Text style={styles.note}>{t.settings.mockNotice}</Text>
-
-      <Pressable
-        onPress={() => setIsResetDialogOpen(true)}
-        style={styles.resetButton}
-        accessibilityRole="button"
-      >
-        <Text style={styles.resetText}>{t.settings.resetSampleData}</Text>
-      </Pressable>
-
-      <ConfirmDialog
-        visible={isResetDialogOpen}
-        title={t.settings.resetTitle}
-        message={t.settings.resetMessage}
-        cancelLabel={t.settings.resetCancel}
-        confirmLabel={t.settings.resetConfirm}
-        onCancel={() => setIsResetDialogOpen(false)}
-        onConfirm={confirmReset}
-      />
     </ScrollView>
   );
 }
@@ -93,16 +119,31 @@ function createStyles(colors: Palette) {
       fontWeight: "600",
       color: colors.onSurface,
     },
+    label: {
+      marginTop: 8,
+      color: colors.onSurfaceVariant,
+    },
     note: {
       color: colors.onSurfaceVariant,
     },
-    resetButton: {
+    textButton: {
       alignSelf: "flex-start",
       paddingVertical: 8,
     },
-    resetText: {
+    textButtonLabel: {
       fontSize: 16,
-      color: colors.error,
+      color: colors.primary,
+    },
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 8,
+    },
+    switchLabel: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.onSurface,
     },
   });
 }

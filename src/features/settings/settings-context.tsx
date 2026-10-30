@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import Storage from "expo-sqlite/kv-store";
 
+import { AUTO_LOCK_SETTINGS, type AutoLockSetting } from "@/features/lock/lock-rules";
+
 import { parseSetting } from "./settings-values";
 
 // "device" means: follow the phone's own setting.
@@ -11,12 +13,15 @@ export type ThemeSetting = (typeof THEME_SETTINGS)[number];
 
 const LANGUAGE_KEY = "settings.language";
 const THEME_KEY = "settings.theme";
+const AUTO_LOCK_KEY = "settings.autoLock";
 
 type SettingsValue = {
   language: LanguageSetting;
   theme: ThemeSetting;
+  autoLock: AutoLockSetting;
   setLanguage: (language: LanguageSetting) => void;
   setTheme: (theme: ThemeSetting) => void;
+  setAutoLock: (autoLock: AutoLockSetting) => void;
 };
 
 const SettingsContext = createContext<SettingsValue | null>(null);
@@ -30,6 +35,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState(() =>
     parseSetting(Storage.getItemSync(THEME_KEY), THEME_SETTINGS, "device"),
   );
+  const [autoLock, setAutoLockState] = useState(() =>
+    parseSetting(Storage.getItemSync(AUTO_LOCK_KEY), AUTO_LOCK_SETTINGS, "1min"),
+  );
 
   function setLanguage(next: LanguageSetting) {
     setLanguageState(next);
@@ -41,8 +49,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     Storage.setItemSync(THEME_KEY, next);
   }
 
+  function setAutoLock(next: AutoLockSetting) {
+    setAutoLockState(next);
+    Storage.setItemSync(AUTO_LOCK_KEY, next);
+  }
+
   return (
-    <SettingsContext value={{ language, theme, setLanguage, setTheme }}>
+    <SettingsContext value={{ language, theme, autoLock, setLanguage, setTheme, setAutoLock }}>
       {children}
     </SettingsContext>
   );
