@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Icon, type IconName } from "@/components/icon";
@@ -16,17 +15,24 @@ const BOTTOM_SPACE_FOR_BUTTON = 88;
 
 type CategoryTreeListProps = {
   expandedIds: ReadonlySet<string>;
+  // The category whose "⋮" actions are open (only one at a time), or null.
+  menuCategoryId: string | null;
   onToggleCategory: (categoryId: string) => void;
+  onToggleMenu: (categoryId: string) => void;
+  onCloseMenu: () => void;
   onAddSubcategory: (parentId: string) => void;
   onRenameCategory: (categoryId: string) => void;
 };
 
 // Shows the whole vault as an expandable tree. Tapping a category expands or collapses it;
 // its "⋮" button opens a small list of actions under the row.
-// This component does not own the expanded state; the screen passes it in.
+// This component does not own the expanded or open-menu state; the screen passes them in.
 export function CategoryTreeList({
   expandedIds,
+  menuCategoryId,
   onToggleCategory,
+  onToggleMenu,
+  onCloseMenu,
   onAddSubcategory,
   onRenameCategory,
 }: CategoryTreeListProps) {
@@ -34,12 +40,6 @@ export function CategoryTreeList({
   const styles = createStyles(useTheme().colors);
   const { categories, credentials } = useVault();
   const rows = getVisibleRows(categories, credentials, expandedIds);
-  // The category whose "⋮" actions are open. Only one at a time.
-  const [menuCategoryId, setMenuCategoryId] = useState<string | null>(null);
-
-  function toggleMenu(categoryId: string) {
-    setMenuCategoryId((current) => (current === categoryId ? null : categoryId));
-  }
 
   return (
     <FlatList
@@ -49,6 +49,8 @@ export function CategoryTreeList({
       extraData={menuCategoryId}
       keyExtractor={getRowKey}
       contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
+      // Scrolling counts as "doing something else", so it closes an open menu.
+      onScrollBeginDrag={onCloseMenu}
       renderItem={({ item }) => {
         switch (item.kind) {
           case "category": {
@@ -59,14 +61,17 @@ export function CategoryTreeList({
                 depth={item.depth}
                 isExpanded={item.isExpanded}
                 isMenuOpen={menuCategoryId === categoryId}
-                onPress={() => onToggleCategory(categoryId)}
-                onPressMenu={() => toggleMenu(categoryId)}
+                onPress={() => {
+                  onCloseMenu();
+                  onToggleCategory(categoryId);
+                }}
+                onPressMenu={() => onToggleMenu(categoryId)}
                 onAddSubcategory={() => {
-                  setMenuCategoryId(null);
+                  onCloseMenu();
                   onAddSubcategory(categoryId);
                 }}
                 onRename={() => {
-                  setMenuCategoryId(null);
+                  onCloseMenu();
                   onRenameCategory(categoryId);
                 }}
               />

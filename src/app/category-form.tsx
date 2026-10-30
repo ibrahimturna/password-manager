@@ -131,6 +131,9 @@ export default function CategoryFormScreen() {
         }}
         onSubmitEditing={save}
         editable={canSave}
+        // The phone refuses extra characters itself (no flicker). It counts like `.length`,
+        // so an emoji uses 2 places; validateCategoryName still checks every name on save.
+        maxLength={MAX_CATEGORY_NAME_LENGTH}
         // Open the keyboard straight away only when a row's "⋮" action chose the category.
         autoFocus={initialCategory !== undefined}
         returnKeyType="done"

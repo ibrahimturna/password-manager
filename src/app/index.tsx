@@ -1,5 +1,6 @@
-import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Icon } from "@/components/icon";
@@ -16,15 +17,38 @@ export default function HomeScreen() {
   const { expandedIds, toggleCategory, collapseAll } = useExpandedCategories();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
+  // The category whose "⋮" actions are open, or null. Only one at a time.
+  const [menuCategoryId, setMenuCategoryId] = useState<string | null>(null);
 
   const hasExpanded = expandedIds.size > 0;
 
+  function toggleMenu(categoryId: string) {
+    setMenuCategoryId((current) => (current === categoryId ? null : categoryId));
+  }
+
+  function closeMenu() {
+    setMenuCategoryId(null);
+  }
+
+  // The returned function runs when this screen loses focus (another screen opens on top),
+  // so a menu is never left open behind the form or the settings screen.
+  useFocusEffect(
+    useCallback(() => {
+      return () => setMenuCategoryId(null);
+    }, []),
+  );
+
   return (
-    <View style={styles.container}>
+    // Any tap that no button inside takes (text, credential rows, empty space) closes the menu.
+    // Buttons inside win because React Native gives a tap to the innermost pressable element.
+    <Pressable style={styles.container} onPress={closeMenu} accessible={false}>
       <Text style={styles.notice}>{t.home.mockNotice}</Text>
 
       <Pressable
-        onPress={collapseAll}
+        onPress={() => {
+          closeMenu();
+          collapseAll();
+        }}
         disabled={!hasExpanded}
         style={styles.collapseButton}
         accessibilityRole="button"
@@ -41,7 +65,10 @@ export default function HomeScreen() {
 
       <CategoryTreeList
         expandedIds={expandedIds}
+        menuCategoryId={menuCategoryId}
         onToggleCategory={toggleCategory}
+        onToggleMenu={toggleMenu}
+        onCloseMenu={closeMenu}
         onAddSubcategory={(parentId) =>
           router.push({ pathname: "/category-form", params: { mode: "create", categoryId: parentId } })
         }
@@ -58,7 +85,7 @@ export default function HomeScreen() {
       >
         <Icon name="add" color={colors.onPrimaryContainer} size={28} />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
