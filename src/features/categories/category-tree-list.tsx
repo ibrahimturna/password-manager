@@ -17,26 +17,36 @@ type CategoryTreeListProps = {
   expandedIds: ReadonlySet<string>;
   // The category whose "⋮" actions are open (only one at a time), or null.
   menuCategoryId: string | null;
+  // The credential whose password was just copied (its copy icon shows a check), or null.
+  copiedCredentialId: string | null;
   onToggleCategory: (categoryId: string) => void;
   onToggleMenu: (categoryId: string) => void;
   onCloseMenu: () => void;
+  onAddPassword: (categoryId: string) => void;
   onAddSubcategory: (parentId: string) => void;
   onRenameCategory: (categoryId: string) => void;
   onDeleteCategory: (categoryId: string) => void;
+  onOpenCredential: (credentialId: string) => void;
+  onCopyCredential: (credentialId: string) => void;
 };
 
 // Shows the whole vault as an expandable tree. Tapping a category expands or collapses it;
-// its "⋮" button opens a small list of actions under the row.
-// This component does not own the expanded or open-menu state; the screen passes them in.
+// its "⋮" button opens a small list of actions under the row. Tapping a credential opens it;
+// long-pressing it, or its copy button, copies its password.
+// This component does not own any state; the screen passes it in.
 export function CategoryTreeList({
   expandedIds,
   menuCategoryId,
+  copiedCredentialId,
   onToggleCategory,
   onToggleMenu,
   onCloseMenu,
+  onAddPassword,
   onAddSubcategory,
   onRenameCategory,
   onDeleteCategory,
+  onOpenCredential,
+  onCopyCredential,
 }: CategoryTreeListProps) {
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
@@ -46,9 +56,9 @@ export function CategoryTreeList({
   return (
     <FlatList
       data={rows}
-      // FlatList only redraws rows when `data` changes. The open menu is not part of `data`,
-      // so `extraData` tells FlatList to redraw when it changes too.
-      extraData={menuCategoryId}
+      // FlatList only redraws rows when `data` changes. The open menu and the copied check mark
+      // are not part of `data`, so `extraData` tells FlatList to redraw when they change too.
+      extraData={[menuCategoryId, copiedCredentialId]}
       keyExtractor={getRowKey}
       contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
       // Scrolling counts as "doing something else", so it closes an open menu.
@@ -68,6 +78,10 @@ export function CategoryTreeList({
                   onToggleCategory(categoryId);
                 }}
                 onPressMenu={() => onToggleMenu(categoryId)}
+                onAddPassword={() => {
+                  onCloseMenu();
+                  onAddPassword(categoryId);
+                }}
                 onAddSubcategory={() => {
                   onCloseMenu();
                   onAddSubcategory(categoryId);
@@ -83,9 +97,28 @@ export function CategoryTreeList({
               />
             );
           }
-          case "credential":
+          case "credential": {
+            const credentialId = item.credential.id;
+            return (
+              <CredentialRow
+                credential={item.credential}
+                depth={item.depth}
+                actions={{
+                  isCopied: copiedCredentialId === credentialId,
+                  onPress: () => {
+                    onCloseMenu();
+                    onOpenCredential(credentialId);
+                  },
+                  onCopy: () => {
+                    onCloseMenu();
+                    onCopyCredential(credentialId);
+                  },
+                }}
+              />
+            );
+          }
           case "empty":
-            // These rows cannot be tapped anyway.
+            // This row cannot be tapped.
             return <ReadOnlyTreeRow row={item} />;
         }
       }}
@@ -112,6 +145,7 @@ type CategoryRowProps = {
   isMenuOpen: boolean;
   onPress: () => void;
   onPressMenu: () => void;
+  onAddPassword: () => void;
   onAddSubcategory: () => void;
   onRename: () => void;
   onDelete: () => void;
@@ -124,6 +158,7 @@ function CategoryRow({
   isMenuOpen,
   onPress,
   onPressMenu,
+  onAddPassword,
   onAddSubcategory,
   onRename,
   onDelete,
@@ -158,6 +193,7 @@ function CategoryRow({
 
       {isMenuOpen && (
         <View style={[styles.menu, indent]}>
+          <MenuAction icon="newPassword" label={t.tree.addPassword} onPress={onAddPassword} />
           <MenuAction icon="newFolder" label={t.tree.addSubcategory} onPress={onAddSubcategory} />
           <MenuAction icon="edit" label={t.tree.rename} onPress={onRename} />
           <MenuAction icon="delete" label={t.tree.delete} onPress={onDelete} isDestructive />
@@ -227,19 +263,62 @@ function MenuAction({ icon, label, onPress, isDestructive = false }: MenuActionP
   );
 }
 
+type CredentialRowActions = {
+  isCopied: boolean;
+  onPress: () => void;
+  onCopy: () => void;
+};
+
 // Shows title and username only. The password is never rendered in the tree.
-function CredentialRow({ credential, depth }: { credential: Credential; depth: number }) {
+// With `actions` the row can be tapped (open), long-pressed (copy) and has a copy button;
+// without them it is read-only (used in previews).
+function CredentialRow({
+  credential,
+  depth,
+  actions,
+}: {
+  credential: Credential;
+  depth: number;
+  actions?: CredentialRowActions;
+}) {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const indent = { paddingLeft: depth * INDENT_PER_LEVEL };
 
-  return (
-    <View style={[styles.row, styles.credentialRow, { paddingLeft: depth * INDENT_PER_LEVEL }]}>
+  const content = (
+    <>
       <Icon name="key" color={colors.onSurfaceVariant} size={20} />
       <View style={styles.credentialText}>
         <Text style={styles.rowTitle}>{credential.title}</Text>
         <Text style={styles.rowSubtitle}>{credential.username ?? t.tree.noUsername}</Text>
       </View>
+    </>
+  );
+
+  if (actions === undefined) {
+    return <View style={[styles.row, styles.credentialRow, indent]}>{content}</View>;
+  }
+
+  return (
+    <View style={[styles.row, styles.categoryLine]}>
+      <Pressable
+        onPress={actions.onPress}
+        onLongPress={actions.onCopy}
+        style={[styles.credentialRow, styles.credentialPressable, indent]}
+        accessibilityRole="button"
+      >
+        {content}
+      </Pressable>
+      <Pressable
+        onPress={actions.onCopy}
+        hitSlop={8}
+        style={styles.menuButton}
+        accessibilityRole="button"
+        accessibilityLabel={t.tree.copyPasswordFor(credential.title)}
+      >
+        <Icon name={actions.isCopied ? "check" : "copy"} color={colors.primary} />
+      </Pressable>
     </View>
   );
 }
@@ -285,6 +364,9 @@ function createStyles(colors: Palette) {
       alignItems: "center",
       gap: 8,
       paddingVertical: 12,
+    },
+    credentialPressable: {
+      flex: 1, // takes the row's width, leaving room for the copy button
     },
     credentialText: {
       flex: 1,

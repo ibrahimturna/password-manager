@@ -8,7 +8,9 @@ const ICONS = {
   add: { ios: "plus", android: "add" },
   check: { ios: "checkmark", android: "check" },
   chevronRight: { ios: "chevron.right", android: "chevron_right" },
+  close: { ios: "xmark", android: "close" },
   collapseAll: { ios: "rectangle.compress.vertical", android: "unfold_less" },
+  copy: { ios: "doc.on.doc", android: "content_copy" },
   delete: { ios: "trash", android: "delete" },
   edit: { ios: "pencil", android: "edit" },
   expandMore: { ios: "chevron.down", android: "expand_more" },
@@ -18,7 +20,10 @@ const ICONS = {
   key: { ios: "key", android: "key" },
   moreActions: { ios: "ellipsis", android: "more_vert" },
   newFolder: { ios: "folder.badge.plus", android: "create_new_folder" },
+  newPassword: { ios: "key.horizontal", android: "password" },
   settings: { ios: "gearshape", android: "settings" },
+  show: { ios: "eye", android: "visibility" },
+  hide: { ios: "eye.slash", android: "visibility_off" },
 } satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
 
 export type IconName = keyof typeof ICONS;

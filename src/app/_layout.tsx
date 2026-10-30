@@ -65,6 +65,10 @@ function AppStack() {
           name="category-form"
           options={{ title: t.categoryForm.title, presentation: "modal" }}
         />
+        <Stack.Screen
+          name="credential-form"
+          options={{ title: t.credentialForm.title, presentation: "modal" }}
+        />
         <Stack.Screen name="settings" options={{ title: t.settings.title }} />
       </Stack>
     </ThemeProvider>

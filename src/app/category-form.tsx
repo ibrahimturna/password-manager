@@ -3,18 +3,14 @@ import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Icon, type IconName } from "@/components/icon";
 import { SegmentedControl } from "@/components/segmented-control";
 import { useVault } from "@/data/vault-context";
 import {
   type CategoryNameError,
   MAX_CATEGORY_NAME_LENGTH,
 } from "@/features/categories/category-name";
-import {
-  getCategoryById,
-  getCategoryPath,
-  getVisibleRows,
-} from "@/features/categories/category-tree";
+import { CategoryPickerRow, getCategoryPickerRows } from "@/features/categories/category-picker";
+import { getCategoryById, getCategoryPath } from "@/features/categories/category-tree";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Translations } from "@/i18n/en";
@@ -23,8 +19,6 @@ import { useTheme } from "@/theme/use-theme";
 import type { Category } from "@/types/vault";
 
 type Mode = "create" | "rename";
-
-const INDENT_PER_LEVEL = 20;
 
 // Creates a category or renames one.
 // Opened with no params from the round "+" button (new top-level category),
@@ -50,12 +44,7 @@ export default function CategoryFormScreen() {
   const [name, setName] = useState(initialMode === "rename" ? (initialCategory?.name ?? "") : "");
   const [error, setError] = useState<CategoryNameError | null>(null);
 
-  // Every category in tree order, with its depth for indentation.
-  // Reuses getVisibleRows by treating every category as expanded and passing no credentials.
-  const allCategoryIds = new Set(categories.map((category) => category.id));
-  const pickerRows = getVisibleRows(categories, [], allCategoryIds).flatMap((row) =>
-    row.kind === "category" ? [row] : [],
-  );
+  const pickerRows = getCategoryPickerRows(categories);
 
   const selectedPath =
     selectedId === null
@@ -168,7 +157,7 @@ export default function CategoryFormScreen() {
         {mode === "create" ? t.categoryForm.chooseWhereToCreate : t.categoryForm.chooseCategory}
       </Text>
       {mode === "create" && (
-        <PickerRow
+        <CategoryPickerRow
           icon="home"
           label={t.categoryForm.topLevel}
           depth={0}
@@ -188,7 +177,7 @@ export default function CategoryFormScreen() {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
       renderItem={({ item }) => (
-        <PickerRow
+        <CategoryPickerRow
           icon="folder"
           label={item.category.name}
           depth={item.depth}
@@ -210,37 +199,6 @@ function getErrorMessage(error: CategoryNameError, t: Translations): string {
     case "duplicate":
       return t.categoryForm.errors.duplicate;
   }
-}
-
-type PickerRowProps = {
-  icon: IconName;
-  label: string;
-  depth: number;
-  isSelected: boolean;
-  onPress: () => void;
-};
-
-function PickerRow({ icon, label, depth, isSelected, onPress }: PickerRowProps) {
-  const { colors } = useTheme();
-  const styles = createStyles(colors);
-  const contentColor = isSelected ? colors.onPrimaryContainer : colors.onSurfaceVariant;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.pickerRow,
-        { paddingLeft: 12 + depth * INDENT_PER_LEVEL },
-        isSelected && styles.pickerRowSelected,
-      ]}
-      accessibilityRole="button"
-      accessibilityState={{ selected: isSelected }}
-    >
-      <Icon name={icon} color={contentColor} size={20} />
-      <Text style={[styles.pickerText, isSelected && styles.pickerTextSelected]}>{label}</Text>
-      {isSelected && <Icon name="check" color={contentColor} size={20} />}
-    </Pressable>
-  );
 }
 
 function createStyles(colors: Palette) {
@@ -300,27 +258,6 @@ function createStyles(colors: Palette) {
     },
     saveTextDisabled: {
       color: colors.disabledContent,
-    },
-    pickerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 12,
-      paddingRight: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.outlineVariant,
-    },
-    pickerRowSelected: {
-      backgroundColor: colors.primaryContainer,
-    },
-    pickerText: {
-      flex: 1,
-      fontSize: 16,
-      color: colors.onSurface,
-    },
-    pickerTextSelected: {
-      color: colors.onPrimaryContainer,
-      fontWeight: "600",
     },
   });
 }

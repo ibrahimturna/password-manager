@@ -1,9 +1,9 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Icon } from "@/components/icon";
+import { Icon, type IconName } from "@/components/icon";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
 import type { CategoryDeletion } from "@/features/categories/category-mutations";
@@ -11,6 +11,7 @@ import { getCategoryById, getSubtreeRows, type TreeRow } from "@/features/catego
 import { CategoryTreeList } from "@/features/categories/category-tree-list";
 import { DeleteCategoryDialog } from "@/features/categories/delete-category-dialog";
 import { useExpandedCategories } from "@/features/categories/expanded-categories-context";
+import { copyPassword } from "@/features/credentials/copy-password";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
@@ -18,6 +19,8 @@ import { useTheme } from "@/theme/use-theme";
 const FLOATING_BUTTON_SIZE = 56;
 // How long a delete can be undone.
 const UNDO_DURATION_MS = 5000;
+// How long a copy button shows a check mark after copying.
+const COPIED_FEEDBACK_MS = 2000;
 
 export default function HomeScreen() {
   const t = useTranslation();
@@ -29,6 +32,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   // The category whose "⋮" actions are open, or null. Only one at a time.
   const [menuCategoryId, setMenuCategoryId] = useState<string | null>(null);
+  // Whether the "+" button's menu (New password / New category) is open.
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  // The credential whose password was just copied; its copy icon shows a check for a moment.
+  const [copiedCredentialId, setCopiedCredentialId] = useState<string | null>(null);
 
   // The category the delete dialog asks about, with its preview rows.
   // Kept after the dialog closes, so the dialog does not go blank while it fades out.
@@ -50,9 +57,32 @@ export default function HomeScreen() {
     setMenuCategoryId((current) => (current === categoryId ? null : categoryId));
   }
 
+  // Closes whichever menu is open (a row's "⋮" actions or the "+" menu).
   function closeMenu() {
     setMenuCategoryId(null);
+    setIsAddMenuOpen(false);
   }
+
+  function openCredentialForm(params: { credentialId?: string; categoryId?: string }) {
+    closeMenu();
+    router.push({ pathname: "/credential-form", params });
+  }
+
+  async function copyCredentialPassword(credentialId: string) {
+    const credential = credentials.find((item) => item.id === credentialId);
+    if (credential === undefined) return;
+    await copyPassword(credential.password);
+    setCopiedCredentialId(credentialId);
+    // Screen readers cannot see the check mark, so they hear this instead.
+    AccessibilityInfo.announceForAccessibility(t.tree.copied);
+  }
+
+  // Turns the check mark back into the copy icon after a moment.
+  useEffect(() => {
+    if (copiedCredentialId === null) return;
+    const timer = setTimeout(() => setCopiedCredentialId(null), COPIED_FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [copiedCredentialId]);
 
   function openDeleteDialog(categoryId: string) {
     const category = getCategoryById(categories, categoryId);
@@ -93,6 +123,7 @@ export default function HomeScreen() {
     useCallback(() => {
       return () => {
         setMenuCategoryId(null);
+        setIsAddMenuOpen(false);
         setPendingUndo(null);
       };
     }, []),
@@ -126,9 +157,11 @@ export default function HomeScreen() {
       <CategoryTreeList
         expandedIds={expandedIds}
         menuCategoryId={menuCategoryId}
+        copiedCredentialId={copiedCredentialId}
         onToggleCategory={toggleCategory}
         onToggleMenu={toggleMenu}
         onCloseMenu={closeMenu}
+        onAddPassword={(categoryId) => openCredentialForm({ categoryId })}
         onAddSubcategory={(parentId) =>
           router.push({ pathname: "/category-form", params: { mode: "create", categoryId: parentId } })
         }
@@ -136,16 +169,9 @@ export default function HomeScreen() {
           router.push({ pathname: "/category-form", params: { mode: "rename", categoryId } })
         }
         onDeleteCategory={openDeleteDialog}
+        onOpenCredential={(credentialId) => openCredentialForm({ credentialId })}
+        onCopyCredential={copyCredentialPassword}
       />
-
-      <Pressable
-        onPress={() => router.push("/category-form")}
-        style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
-        accessibilityRole="button"
-        accessibilityLabel={t.home.newCategoryButton}
-      >
-        <Icon name="add" color={colors.onPrimaryContainer} size={28} />
-      </Pressable>
 
       {pendingUndo !== null && (
         <Snackbar
@@ -156,6 +182,44 @@ export default function HomeScreen() {
           bottom={insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12}
         />
       )}
+
+      {/* The "+" menu: two labelled choices above the round button. */}
+      {isAddMenuOpen && (
+        <View
+          style={[styles.addMenu, { bottom: insets.bottom + 16 + FLOATING_BUTTON_SIZE + 12 }]}
+        >
+          <AddMenuItem
+            icon="newPassword"
+            label={t.home.newPassword}
+            onPress={() => openCredentialForm({})}
+          />
+          <AddMenuItem
+            icon="newFolder"
+            label={t.home.newCategory}
+            onPress={() => {
+              closeMenu();
+              router.push("/category-form");
+            }}
+          />
+        </View>
+      )}
+
+      <Pressable
+        onPress={() => {
+          setMenuCategoryId(null);
+          setIsAddMenuOpen((open) => !open);
+        }}
+        style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
+        accessibilityRole="button"
+        accessibilityLabel={isAddMenuOpen ? t.home.closeAddMenu : t.home.addButton}
+        accessibilityState={{ expanded: isAddMenuOpen }}
+      >
+        <Icon
+          name={isAddMenuOpen ? "close" : "add"}
+          color={colors.onPrimaryContainer}
+          size={28}
+        />
+      </Pressable>
 
       <DeleteCategoryDialog
         visible={isDeleteDialogOpen}
@@ -203,5 +267,47 @@ function createStyles(colors: Palette) {
       justifyContent: "center",
       elevation: 4, // Android shadow
     },
+    addMenu: {
+      position: "absolute",
+      right: 16,
+      alignItems: "flex-end",
+      gap: 12,
+    },
+    addMenuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      borderRadius: 28,
+      backgroundColor: colors.primaryContainer,
+      elevation: 3, // Android shadow
+    },
+    addMenuText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.onPrimaryContainer,
+    },
   });
+}
+
+// One labelled choice in the "+" menu.
+function AddMenuItem({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
+  return (
+    <Pressable onPress={onPress} style={styles.addMenuItem} accessibilityRole="button">
+      <Icon name={icon} color={colors.onPrimaryContainer} size={22} />
+      <Text style={styles.addMenuText}>{label}</Text>
+    </Pressable>
+  );
 }
