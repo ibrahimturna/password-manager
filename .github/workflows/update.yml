@@ -23,4 +23,5 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx jest
-      - run: eas update --channel preview --environment preview --message "${{ github.sha }}" --non-interactive
+      # Android only: exporting every platform also tries the web, where expo-sqlite fails.
+      - run: eas update --platform android --channel preview --environment preview --message "${{ github.sha }}" --non-interactive
