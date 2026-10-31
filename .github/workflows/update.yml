@@ -1,0 +1,26 @@
+# Sends JavaScript changes to the installed app on every push.
+# Needs an EXPO_TOKEN repository secret. Native changes still need a new build: the update only
+# reaches builds with the same fingerprint, so it can never load on an app it does not fit.
+name: Update app
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx jest
+      - run: eas update --channel preview --environment preview --message "${{ github.sha }}" --non-interactive
