@@ -27,7 +27,7 @@
       ]
     },
     "web": {
-      "output": "server",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -65,6 +65,12 @@
         "projectId": "77ccde06-62e1-48ce-bb25-2e92b0bb86c0"
       }
     },
-    "owner": "ibrahimturna"
+    "owner": "ibrahimturna",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/77ccde06-62e1-48ce-bb25-2e92b0bb86c0"
+    }
   }
 }

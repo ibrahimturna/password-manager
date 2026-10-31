@@ -16,6 +16,7 @@ import { Icon } from "@/components/icon";
 import { PasswordInput } from "@/components/password-input";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
+import { getLinkedTargets } from "@/features/autofill/autofill-rules";
 import { FolderPickerRow, getFolderPickerRows } from "@/features/folders/folder-picker";
 import { getFolderById, getFolderPath } from "@/features/folders/folder-tree";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
@@ -59,6 +60,7 @@ export default function CredentialFormScreen() {
     updateCredential,
     deleteCredential,
     restoreCredentials,
+    autofillLinks,
   } = useVault();
   const { expandWithParents } = useExpandedFolders();
   const { offerUndo } = useUndo();
@@ -248,6 +250,22 @@ export default function CredentialFormScreen() {
         </Pressable>
       </View>
 
+      {/* A link needs a saved password to point at, so this appears when editing. */}
+      {existing !== undefined && (
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/autofill-links", params: { credentialId: existing.id } })
+          }
+          style={styles.linksRow}
+          accessibilityRole="button"
+        >
+          <Text style={styles.selection}>{t.autofillLinks.title}</Text>
+          <Text style={styles.linksCount}>
+            {getLinkedTargets(autofillLinks, existing.id).length}
+          </Text>
+        </Pressable>
+      )}
+
       <Text style={styles.sectionTitle}>{t.credentialForm.folder}</Text>
       {folderPath === null ? (
         <Text style={[styles.folderHint, isFolderMissing && styles.folderHintMissing]}>
@@ -368,6 +386,19 @@ function createStyles(colors: Palette) {
     selection: {
       fontSize: 16,
       color: colors.onSurface,
+    },
+    linksRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 16,
+      paddingVertical: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.outlineVariant,
+    },
+    linksCount: {
+      fontSize: 16,
+      color: colors.primary,
     },
     input: {
       ...field,

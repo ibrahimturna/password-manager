@@ -1,5 +1,8 @@
 import { router } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+
+import { openAutofillProviderSettings } from "../../modules/password-autofill";
 
 import { PasswordInput } from "@/components/password-input";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -26,6 +29,7 @@ export default function SettingsScreen() {
   const t = useTranslation();
   const styles = createStyles(useTheme().colors);
   useKeptRoute("/settings");
+  const [isAutofillMissing, setIsAutofillMissing] = useState(false);
 
   // Turning the phone lock on first checks that it really works.
   async function changeDeviceLock(on: boolean) {
@@ -38,6 +42,10 @@ export default function SettingsScreen() {
   async function changeScreenCapture(allowed: boolean) {
     if (allowed && deviceLockOn && !(await verifyUser(t.lock.devicePrompt))) return;
     setScreenCapture(allowed ? "allowed" : "blocked");
+  }
+
+  function turnOnAutofill() {
+    setIsAutofillMissing(!openAutofillProviderSettings());
   }
 
   return (
@@ -131,6 +139,10 @@ export default function SettingsScreen() {
         >
           <Text style={styles.textButtonLabel}>{t.backup.title}</Text>
         </Pressable>
+        <Pressable onPress={turnOnAutofill} style={styles.textButton} accessibilityRole="button">
+          <Text style={styles.textButtonLabel}>{t.autofill.turnOn}</Text>
+        </Pressable>
+        {isAutofillMissing && <Text style={styles.note}>{t.autofill.turnOnFailed}</Text>}
       </View>
     </ScrollView>
   );

@@ -79,6 +79,14 @@ function AppStack() {
           options={{ title: t.credentialForm.title, presentation: "modal" }}
         />
         <Stack.Screen
+          name="autofill-links"
+          options={{ title: t.autofillLinks.title, presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="merge-credentials"
+          options={{ title: t.merge.title, presentation: "modal" }}
+        />
+        <Stack.Screen
           name="master-password"
           options={{ title: t.masterPasswordForm.title, presentation: "modal" }}
         />

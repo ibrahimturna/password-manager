@@ -1,12 +1,14 @@
 import { deleteDatabaseAsync, openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 
+import type { AutofillLink } from "@/features/autofill/autofill-rules";
 import type { Credential, Folder } from "@/types/vault";
 
 import { credentialToRow, folderToRow, type ItemChanges } from "./vault-rows";
 
 const DATABASE_NAME = "vault.db";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const MASTER_PASSWORD_ROW = "master-password";
+const SAVED_LOGINS_FOLDER_ROW = "saved-logins-folder";
 
 // Removes a database left behind without its key, so a new vault can start clean.
 // Only used when no key exists: without its key the old file can never be read.
@@ -20,8 +22,12 @@ export async function deleteUnreadableDatabase(): Promise<void> {
 
 // Opens the encrypted vault with its key, creating the tables on the first start.
 // Throws if encryption is not available or the key is wrong: the vault must never run unencrypted.
-export async function openVaultDatabase(vaultKey: string): Promise<SQLiteDatabase> {
-  const db = await openDatabaseAsync(DATABASE_NAME);
+// The autofill window asks for its own connection, so closing it leaves the app's one open.
+export async function openVaultDatabase(
+  vaultKey: string,
+  useNewConnection = false,
+): Promise<SQLiteDatabase> {
+  const db = await openDatabaseAsync(DATABASE_NAME, { useNewConnection });
 
   // Without SQLCipher in the app (e.g. in Expo Go), "PRAGMA key" silently does nothing,
   // so check first instead of trusting it.
@@ -74,6 +80,17 @@ function upgradeSchema(db: SQLiteDatabase, fromVersion: number) {
         "CREATE TABLE vault_settings (name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)",
       );
     }
+    if (fromVersion < 3) {
+      // No foreign key: saving a credential replaces its row, which would remove its links.
+      // A link to a deleted credential is simply never found.
+      db.execSync(`
+        CREATE TABLE autofill_links (
+          target TEXT NOT NULL,
+          credential_id TEXT NOT NULL,
+          PRIMARY KEY (target, credential_id)
+        )
+      `);
+    }
     db.execSync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   });
 }
@@ -93,6 +110,44 @@ export function writeMasterPassword(db: SQLiteDatabase, password: string) {
     "INSERT OR REPLACE INTO vault_settings (name, value) VALUES (?, ?)",
     MASTER_PASSWORD_ROW,
     password,
+  );
+}
+
+export function readSavedLoginsFolderId(db: SQLiteDatabase): string | null {
+  const row = db.getFirstSync<{ value: string }>(
+    "SELECT value FROM vault_settings WHERE name = ?",
+    SAVED_LOGINS_FOLDER_ROW,
+  );
+  return row?.value ?? null;
+}
+
+export function writeSavedLoginsFolderId(db: SQLiteDatabase, folderId: string) {
+  db.runSync(
+    "INSERT OR REPLACE INTO vault_settings (name, value) VALUES (?, ?)",
+    SAVED_LOGINS_FOLDER_ROW,
+    folderId,
+  );
+}
+
+export function readAutofillLinks(db: SQLiteDatabase): AutofillLink[] {
+  return db
+    .getAllSync<{ target: string; credential_id: string }>("SELECT * FROM autofill_links")
+    .map((row) => ({ target: row.target, credentialId: row.credential_id }));
+}
+
+export function writeAutofillLink(db: SQLiteDatabase, target: string, credentialId: string) {
+  db.runSync(
+    "INSERT OR IGNORE INTO autofill_links (target, credential_id) VALUES (?, ?)",
+    target,
+    credentialId,
+  );
+}
+
+export function deleteAutofillLink(db: SQLiteDatabase, target: string, credentialId: string) {
+  db.runSync(
+    "DELETE FROM autofill_links WHERE target = ? AND credential_id = ?",
+    target,
+    credentialId,
   );
 }
 

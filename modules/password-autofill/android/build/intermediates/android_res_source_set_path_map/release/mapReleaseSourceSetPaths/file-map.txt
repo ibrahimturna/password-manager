@@ -1,0 +1,9 @@
+expo.modules.passwordautofill.password-autofill-pngs-0 D:\Projects\password-manager\modules\password-autofill\android\build\generated\res\pngs\release
+expo.modules.passwordautofill.password-autofill-updated_navigation_xml-1 D:\Projects\password-manager\modules\password-autofill\android\build\generated\updated_navigation_xml\release
+expo.modules.passwordautofill.password-autofill-mergeReleaseResources-2 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\incremental\release\mergeReleaseResources\merged.dir
+expo.modules.passwordautofill.password-autofill-mergeReleaseResources-3 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\incremental\release\mergeReleaseResources\stripped.dir
+expo.modules.passwordautofill.password-autofill-release-4 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\merged_res\release\mergeReleaseResources
+expo.modules.passwordautofill.password-autofill-release-5 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\packaged_res\release\packageReleaseResources
+expo.modules.passwordautofill.password-autofill-main-6 D:\Projects\password-manager\modules\password-autofill\android\src\main\res
+expo.modules.passwordautofill.password-autofill-release-7 D:\Projects\password-manager\modules\password-autofill\android\src\release\res
+gradleHome-0 C:\Users\ibo53\.gradle

@@ -63,6 +63,22 @@ export default function HomeScreen() {
 
   const { pendingUndo, offerUndo, runUndo, dismissUndo } = useUndo();
 
+  // The passwords chosen for merging, or null when not selecting.
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string> | null>(null);
+
+  function toggleSelected(credentialId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (!next.delete(credentialId)) next.add(credentialId);
+      return next;
+    });
+  }
+
+  function openMerge() {
+    if (selectedIds === null || selectedIds.size < 2) return;
+    router.push({ pathname: "/merge-credentials", params: { ids: [...selectedIds].join(",") } });
+  }
+
   // Search. The results are the normal tree, cut down to the matches (see searchVault).
   // React Native 0.88 types a TextInput ref with TextInputInstance (it has .focus()).
   const searchInputRef = useRef<TextInputInstance>(null);
@@ -174,6 +190,7 @@ export default function HomeScreen() {
       return () => {
         setMenuFolderId(null);
         setIsAddMenuOpen(false);
+        setSelectedIds(null);
         dismissUndo();
       };
     }, [dismissUndo]),
@@ -219,24 +236,38 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <Pressable
-        onPress={() => {
-          closeMenu();
-          collapseShownFolders();
-        }}
-        disabled={!hasExpanded}
-        style={styles.collapseButton}
-        accessibilityRole="button"
-      >
-        <Icon
-          name="collapseAll"
-          color={hasExpanded ? colors.primary : colors.disabledContent}
-          size={20}
-        />
-        <Text style={[styles.collapseText, !hasExpanded && styles.disabledText]}>
-          {t.home.collapseAll}
-        </Text>
-      </Pressable>
+      <View style={styles.listActions}>
+        <Pressable
+          onPress={() => {
+            closeMenu();
+            setSelectedIds((current) => (current === null ? new Set() : null));
+          }}
+          style={styles.collapseButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.collapseText}>
+            {selectedIds === null ? t.merge.select : t.merge.cancel}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            closeMenu();
+            collapseShownFolders();
+          }}
+          disabled={!hasExpanded}
+          style={styles.collapseButton}
+          accessibilityRole="button"
+        >
+          <Icon
+            name="collapseAll"
+            color={hasExpanded ? colors.primary : colors.disabledContent}
+            size={20}
+          />
+          <Text style={[styles.collapseText, !hasExpanded && styles.disabledText]}>
+            {t.home.collapseAll}
+          </Text>
+        </Pressable>
+      </View>
 
       <FolderTreeList
         expandedIds={shownExpandedIds}
@@ -244,6 +275,8 @@ export default function HomeScreen() {
         emptyText={isSearching ? t.tree.noResults(query.trim()) : t.tree.noFolders}
         menuFolderId={menuFolderId}
         copiedCredentialId={copiedCredentialId}
+        selectedIds={selectedIds ?? undefined}
+        onToggleSelected={toggleSelected}
         onToggleFolder={toggleShownFolder}
         onToggleMenu={toggleMenu}
         onCloseMenu={closeMenu}
@@ -270,8 +303,25 @@ export default function HomeScreen() {
         />
       )}
 
+      {selectedIds !== null && (
+        <Pressable
+          onPress={openMerge}
+          disabled={selectedIds.size < 2}
+          style={[
+            styles.mergeButton,
+            { bottom: insets.bottom + 16 },
+            selectedIds.size < 2 && styles.mergeButtonDisabled,
+          ]}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.mergeText, selectedIds.size < 2 && styles.disabledText]}>
+            {t.merge.mergeCount(selectedIds.size)}
+          </Text>
+        </Pressable>
+      )}
+
       {/* The small search button above "+". Hidden while the "+" menu uses that space. */}
-      {!isAddMenuOpen && (
+      {!isAddMenuOpen && selectedIds === null && (
         <Pressable
           onPress={focusSearch}
           style={[
@@ -309,22 +359,24 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <Pressable
-        onPress={() => {
-          setMenuFolderId(null);
-          setIsAddMenuOpen((open) => !open);
-        }}
-        style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
-        accessibilityRole="button"
-        accessibilityLabel={isAddMenuOpen ? t.home.closeAddMenu : t.home.addButton}
-        accessibilityState={{ expanded: isAddMenuOpen }}
-      >
-        <Icon
-          name={isAddMenuOpen ? "close" : "add"}
-          color={colors.onPrimaryContainer}
-          size={28}
-        />
-      </Pressable>
+      {selectedIds === null && (
+        <Pressable
+          onPress={() => {
+            setMenuFolderId(null);
+            setIsAddMenuOpen((open) => !open);
+          }}
+          style={[styles.floatingButton, { bottom: insets.bottom + 16 }]}
+          accessibilityRole="button"
+          accessibilityLabel={isAddMenuOpen ? t.home.closeAddMenu : t.home.addButton}
+          accessibilityState={{ expanded: isAddMenuOpen }}
+        >
+          <Icon
+            name={isAddMenuOpen ? "close" : "add"}
+            color={colors.onPrimaryContainer}
+            size={28}
+          />
+        </Pressable>
+      )}
 
       <DeleteFolderDialog
         visible={isDeleteDialogOpen}
@@ -371,8 +423,28 @@ function createStyles(colors: Palette) {
       justifyContent: "center",
       elevation: 3, // Android shadow
     },
+    listActions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    mergeButton: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      alignItems: "center",
+      paddingVertical: 14,
+      borderRadius: 28,
+      backgroundColor: colors.primary,
+      elevation: 3, // Android shadow
+    },
+    mergeButtonDisabled: {
+      backgroundColor: colors.disabledContainer,
+    },
+    mergeText: {
+      fontSize: 16,
+      color: colors.onPrimary,
+    },
     collapseButton: {
-      alignSelf: "flex-end",
       flexDirection: "row",
       alignItems: "center",
       gap: 4,

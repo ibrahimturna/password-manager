@@ -1,0 +1,7 @@
+<resources>
+  <string name="password_autofill_service_name">Password Manager</string>
+  <string name="password_autofill_offer">Fill from Password Manager</string>
+  <string name="password_autofill_offer_title">Fill %1$s login</string>
+  <string name="password_autofill_inline_title">Fill login</string>
+  <string name="password_autofill_no_username">This password has no username saved.</string>
+</resources>

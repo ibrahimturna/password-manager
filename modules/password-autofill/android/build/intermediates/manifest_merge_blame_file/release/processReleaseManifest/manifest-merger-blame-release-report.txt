@@ -1,0 +1,66 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="expo.modules.passwordautofill" >
+4
+5    <uses-sdk android:minSdkVersion="24" />
+5-->INJECTED
+5-->INJECTED
+6    <!-- Without this, Android 11+ hides other apps, so only their package names could be shown. -->
+7    <queries>
+7-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:3:3-8:13
+8        <intent>
+8-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:4:5-7:14
+9            <action android:name="android.intent.action.MAIN" />
+9-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:5:7-59
+9-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:5:15-56
+10
+11            <category android:name="android.intent.category.LAUNCHER" />
+11-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:6:7-67
+11-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:6:17-64
+12        </intent>
+13    </queries>
+14
+15    <application>
+15-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:10:3-31:17
+16        <service
+16-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:11:5-22:15
+17            android:name="expo.modules.passwordautofill.PasswordAutofillService"
+17-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:12:7-46
+18            android:exported="true"
+18-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:13:7-30
+19            android:label="@string/password_autofill_service_name"
+19-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:14:7-61
+20            android:permission="android.permission.BIND_AUTOFILL_SERVICE" >
+20-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:15:7-68
+21            <intent-filter>
+21-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:16:7-18:23
+22                <action android:name="android.service.autofill.AutofillService" />
+22-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:17:9-75
+22-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:17:17-72
+23            </intent-filter>
+24
+25            <meta-data
+25-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:19:7-21:61
+26                android:name="android.autofill"
+26-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:20:9-40
+27                android:resource="@xml/password_autofill_service" />
+27-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:21:9-58
+28        </service>
+29
+30        <activity
+30-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:24:5-30:52
+31            android:name="expo.modules.passwordautofill.AutofillActivity"
+31-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:25:7-39
+32            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+32-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:26:7-116
+33            android:excludeFromRecents="true"
+33-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:27:7-40
+34            android:exported="false"
+34-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:28:7-31
+35            android:theme="@style/PasswordAutofillTheme"
+35-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:29:7-51
+36            android:windowSoftInputMode="adjustResize" />
+36-->D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:30:7-49
+37    </application>
+38
+39</manifest>

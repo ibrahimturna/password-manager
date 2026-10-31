@@ -1,0 +1,66 @@
+-- Merging decision tree log ---
+manifest
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:1:1-32:12
+INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:1:1-32:12
+	package
+		INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:1:11-69
+queries
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:3:3-8:13
+intent#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:4:5-7:14
+action#android.intent.action.MAIN
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:5:7-59
+	android:name
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:5:15-56
+category#android.intent.category.LAUNCHER
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:6:7-67
+	android:name
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:6:17-64
+application
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:10:3-31:17
+service#expo.modules.passwordautofill.PasswordAutofillService
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:11:5-22:15
+	android:label
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:14:7-61
+	android:exported
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:13:7-30
+	android:permission
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:15:7-68
+	android:name
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:12:7-46
+intent-filter#action:name:android.service.autofill.AutofillService
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:16:7-18:23
+action#android.service.autofill.AutofillService
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:17:9-75
+	android:name
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:17:17-72
+meta-data#android.autofill
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:19:7-21:61
+	android:resource
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:21:9-58
+	android:name
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:20:9-40
+activity#expo.modules.passwordautofill.AutofillActivity
+ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:24:5-30:52
+	android:excludeFromRecents
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:27:7-40
+	android:windowSoftInputMode
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:30:7-49
+	android:exported
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:28:7-31
+	android:configChanges
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:26:7-116
+	android:theme
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:29:7-51
+	android:name
+		ADDED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml:25:7-39
+uses-sdk
+INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml
+INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from D:\Projects\password-manager\modules\password-autofill\android\src\main\AndroidManifest.xml

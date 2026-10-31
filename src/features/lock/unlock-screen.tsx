@@ -12,6 +12,8 @@ type UnlockScreenProps = {
   // Resolves to false when the password is wrong.
   onUnlockWithPassword: (password: string) => Promise<boolean>;
   onUnlockWithDeviceLock: () => Promise<void>;
+  // True while the prompt must not open by itself, because another window is using it.
+  shouldHoldPrompt?: () => boolean;
 };
 
 // Shown whenever the vault is locked.
@@ -19,6 +21,7 @@ export function UnlockScreen({
   isDeviceLockOn,
   onUnlockWithPassword,
   onUnlockWithDeviceLock,
+  shouldHoldPrompt,
 }: UnlockScreenProps) {
   const t = useTranslation();
   const { colors } = useTheme();
@@ -35,20 +38,17 @@ export function UnlockScreen({
     if (!isDeviceLockOn) return;
 
     function ask() {
-      if (hasAskedRef.current) return;
+      if (hasAskedRef.current || shouldHoldPrompt?.() === true) return;
       hasAskedRef.current = true;
       void onUnlockWithDeviceLock();
     }
 
-    if (AppState.currentState === "active") {
-      ask();
-      return;
-    }
+    if (AppState.currentState === "active") ask();
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") ask();
     });
     return () => subscription.remove();
-  }, [isDeviceLockOn, onUnlockWithDeviceLock]);
+  }, [isDeviceLockOn, onUnlockWithDeviceLock, shouldHoldPrompt]);
 
   async function unlock() {
     if (password === "" || isBusy) return;

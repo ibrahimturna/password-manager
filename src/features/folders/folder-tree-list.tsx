@@ -25,6 +25,9 @@ type FolderTreeListProps = {
   menuFolderId: string | null;
   // The credential whose password was just copied (its copy icon shows a check), or null.
   copiedCredentialId: string | null;
+  // While selecting: the chosen credentials. Tapping a credential then selects it.
+  selectedIds?: ReadonlySet<string>;
+  onToggleSelected?: (credentialId: string) => void;
   onToggleFolder: (folderId: string) => void;
   onToggleMenu: (folderId: string) => void;
   onCloseMenu: () => void;
@@ -46,6 +49,8 @@ export function FolderTreeList({
   emptyText,
   menuFolderId,
   copiedCredentialId,
+  selectedIds,
+  onToggleSelected,
   onToggleFolder,
   onToggleMenu,
   onCloseMenu,
@@ -73,7 +78,7 @@ export function FolderTreeList({
       data={rows}
       // FlatList only redraws rows when `data` changes. The open menu and the copied check mark
       // are not part of `data`, so `extraData` tells FlatList to redraw when they change too.
-      extraData={[menuFolderId, copiedCredentialId]}
+      extraData={[menuFolderId, copiedCredentialId, selectedIds]}
       keyExtractor={getRowKey}
       contentContainerStyle={{ paddingBottom: BOTTOM_SPACE_FOR_BUTTON }}
       // Scrolling counts as "doing something else", so it closes an open menu.
@@ -127,9 +132,14 @@ export function FolderTreeList({
                 depth={item.depth}
                 actions={{
                   isCopied: copiedCredentialId === credentialId,
+                  isSelected: selectedIds?.has(credentialId),
                   onPress: () => {
                     onCloseMenu();
-                    onOpenCredential(credentialId);
+                    if (selectedIds !== undefined) {
+                      onToggleSelected?.(credentialId);
+                    } else {
+                      onOpenCredential(credentialId);
+                    }
                   },
                   onCopy: () => {
                     onCloseMenu();
@@ -311,6 +321,8 @@ function MenuAction({ icon, label, onPress, isDestructive = false }: MenuActionP
 
 type CredentialRowActions = {
   isCopied: boolean;
+  // Undefined when not selecting.
+  isSelected?: boolean;
   onPress: () => void;
   onCopy: () => void;
 };
@@ -347,6 +359,23 @@ function CredentialRow({
 
   if (actions === undefined) {
     return <View style={[styles.row, styles.credentialRow, indent]}>{content}</View>;
+  }
+
+  if (actions.isSelected !== undefined) {
+    return (
+      <Pressable
+        onPress={actions.onPress}
+        style={[styles.row, styles.credentialRow, indent]}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: actions.isSelected }}
+      >
+        {content}
+        <Icon
+          name={actions.isSelected ? "selected" : "notSelected"}
+          color={actions.isSelected ? colors.primary : colors.onSurfaceVariant}
+        />
+      </Pressable>
+    );
   }
 
   return (

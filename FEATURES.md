@@ -57,6 +57,20 @@ Local-only password manager for Android, version 1.0.0. It needs Android 7.0 or 
 - Before restoring, the backup is shown as a folder tree, with each item marked new, already here or different.
 - When a password differs between the phone and the backup, you see the current version and the backup version with their differences highlighted. You must choose one for every such password, one by one or all at once, before restoring. Showing the passwords is optional.
 
+### Autofill
+
+Filling, the keyboard offer, shared website matching and saving are tested on a phone in several apps and browsers. Two-screen logins, the link editor and app names await a phone test.
+
+- Turn it on from Settings, which opens Android's autofill provider screen.
+- On a login screen in another app or a browser, tap the offer. It appears above the keyboard if your keyboard supports that, otherwise as a small menu. It shows the password's title once a login is remembered, and on phones where Android allows it, a remembered login can open as a popup from the bottom instead.
+- Every fill asks for the phone lock if it is on, otherwise the master password. The other app stays visible behind the prompt.
+- The first time, pick a password from a panel at the bottom and it is remembered for that app or website, in every browser and on all parts of the same site. With one remembered password it fills straight away, and with several you choose. Your notes and folders do not change.
+- After you log in by typing, Android offers to save the login. New logins go to the "Saved logins" folder, which is created when needed in the app's current language. Its name then stays as it is, and you can rename it. They are normal passwords you can edit or move. Every app and website gets its own entry, even with the same username and password as another. If the password of a remembered login changed, you are asked before it is replaced.
+- On the home screen, tap Select, choose two or more passwords and tap Merge. You choose the title to keep, and the username and password when they differ. The merged password fills everywhere the others did, and you can undo it.
+- When editing a password, "Linked apps and websites" shows where it fills. You can remove a link, type a website, or pick an installed app. Changes save straight away.
+- Logins split across two screens fill one screen at a time, each with its own unlock. Their username is saved too when both screens are in the same Android activity; otherwise it is left empty. Some sites and browsers may not trigger the offer.
+- Remembered links are not part of backup files yet.
+
 ### Appearance and language
 
 - English and Turkish, or follow the phone's language.
@@ -70,6 +84,10 @@ Local-only password manager for Android, version 1.0.0. It needs Android 7.0 or 
 | The app itself | 7.0 or newer |
 | Password hidden in the system's clipboard preview | 13 or newer. Older versions get a compatibility flag where supported. |
 | Message after trying to take a screenshot | Does not appear on 13 (tested). 14 or newer is possible, but untested. |
+| Autofill in other apps and browsers | 8.0 or newer. Each app or browser must support it. Chrome needs its own setting to use another autofill service. |
+| Autofill offer above the keyboard | 11 or newer, and the keyboard must support it |
+| Offer to save a typed login | 9 or newer |
+| Popup for a remembered login | 13 or newer, only if the phone's Android turns it on, and it can differ per app (tested: Messenger yes, Instagram no) |
 | "Follow the phone" dark theme | 10 or newer, because older versions have no system-wide dark theme |
 | App icon that matches the wallpaper colours | 13 or newer |
 
@@ -130,6 +148,20 @@ Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.0.
 - Geri yüklemeden önce yedek, her öğesi yeni, zaten var veya farklı olarak işaretlenmiş bir klasör ağacı olarak gösterilir.
 - Bir şifre telefonda ve yedekte farklıysa mevcut sürümü ve yedekteki sürümü, farkları vurgulanmış olarak görürsünüz. Geri yüklemeden önce bu tür her şifre için tek tek veya toplu olarak bir sürüm seçmeniz gerekir. Şifreleri göstermek isteğe bağlıdır.
 
+### Otomatik doldurma
+
+Doldurma, klavye üstü öneri, ortak web sitesi eşleştirme ve kaydetme birçok uygulama ve tarayıcıda telefonda test edildi. İki ekranlı girişler, bağlantı düzenleyici ve uygulama adları telefonda test bekliyor.
+
+- Ayarlar'dan açın; Android'in otomatik doldurma sağlayıcısı ekranı açılır.
+- Başka bir uygulamanın veya tarayıcının giriş ekranında öneriye dokunun. Klavyeniz destekliyorsa öneri klavyenin üstünde, desteklemiyorsa küçük bir menü olarak görünür. Giriş hatırlandıktan sonra şifrenin başlığını gösterir ve Android'in izin verdiği telefonlarda hatırlanan giriş bunun yerine alttan açılan bir pencere olarak görünebilir.
+- Her doldurmada telefon kilidi açıksa o, değilse ana şifre istenir. Diğer uygulama istemin arkasında görünmeye devam eder.
+- İlk seferde alttan açılan panelden bir şifre seçersiniz ve o uygulama veya web sitesi için, tüm tarayıcılarda ve aynı sitenin tüm bölümlerinde hatırlanır. Hatırlanan tek şifre varsa hemen doldurulur, birkaç şifre varsa siz seçersiniz. Notlarınız ve klasörleriniz değişmez.
+- Yazarak giriş yaptıktan sonra Android girişi kaydetmeyi önerir. Yeni girişler, gerektiğinde uygulamanın o anki dilinde oluşturulan "Kaydedilen girişler" klasörüne gider. Klasörün adı sonra aynı kalır ve adını değiştirebilirsiniz. Bunlar düzenleyip taşıyabileceğiniz normal şifrelerdir. Kullanıcı adı ve şifre başka bir girişle aynı olsa bile her uygulama ve web sitesinin kendi kaydı olur. Hatırlanan bir girişin şifresi değiştiyse değiştirmeden önce size sorulur.
+- Ana ekranda Seç'e dokunun, iki veya daha fazla şifre seçip Birleştir'e dokunun. Kalacak başlığı, farklıysa kullanıcı adını ve şifreyi siz seçersiniz. Birleştirilen şifre diğerlerinin doldurulduğu her yerde doldurulur ve işlemi geri alabilirsiniz.
+- Bir şifreyi düzenlerken "Bağlı uygulamalar ve web siteleri" şifrenin nerede doldurulduğunu gösterir. Bir bağlantıyı kaldırabilir, web sitesi yazabilir veya yüklü bir uygulama seçebilirsiniz. Değişiklikler hemen kaydedilir.
+- İki ekrana bölünmüş girişler her ekranda ayrı kilit açmayla, ekran ekran doldurulur. İki ekran aynı Android etkinliğindeyse kullanıcı adı da kaydedilir, değilse boş kalır. Bazı site ve tarayıcılarda öneri çıkmayabilir.
+- Hatırlanan bağlantılar henüz yedek dosyalarına dahil değildir.
+
 ### Görünüm ve dil
 
 - İngilizce ve Türkçe ya da telefonun dili.
@@ -143,6 +175,10 @@ Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.0.
 | Uygulamanın kendisi | 7.0 veya üzeri |
 | Şifrenin sistemin pano önizlemesinde gizlenmesi | 13 veya üzeri. Eski sürümlerde, desteklendiği yerde uyumluluk işareti kullanılır. |
 | Ekran görüntüsü alma denemesinden sonraki mesaj | 13 sürümünde görünmez (test edildi). 14 veya üzerinde mümkün, ancak test edilmedi. |
+| Diğer uygulamalarda ve tarayıcılarda otomatik doldurma | 8.0 veya üzeri. Uygulamanın veya tarayıcının desteklemesi gerekir. Chrome'da başka bir otomatik doldurma hizmeti için ayrı bir ayar açılmalıdır. |
+| Klavyenin üstünde otomatik doldurma önerisi | 11 veya üzeri ve klavyenin desteklemesi gerekir |
+| Yazılan girişi kaydetme önerisi | 9 veya üzeri |
+| Hatırlanan giriş için açılır pencere | 13 veya üzeri, yalnızca telefondaki Android bunu açtıysa ve uygulamaya göre değişebilir (test edildi: Messenger'da evet, Instagram'da hayır) |
 | "Telefonu takip et" koyu tema | 10 veya üzeri, çünkü eski sürümlerde sistem genelinde koyu tema yoktur |
 | Duvar kağıdı renklerine uyan uygulama simgesi | 13 veya üzeri |
 

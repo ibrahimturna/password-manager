@@ -12,6 +12,10 @@ import {
 } from "react";
 import { ActivityIndicator, AppState, StyleSheet, Text, View } from "react-native";
 
+import { isAutofillOpen, setAutofillOfferTitles } from "../../modules/password-autofill";
+
+import { type AutofillLink, getOfferTitles } from "@/features/autofill/autofill-rules";
+import { listenForVaultChange } from "@/features/autofill/vault-change-signal";
 import {
   applyRestorePlan,
   type RestoreChoice,
@@ -20,6 +24,7 @@ import {
 } from "@/features/backup/restore-plan";
 import type { FolderDeletion } from "@/features/folders/folder-mutations";
 import type { CredentialInput } from "@/features/credentials/credential-validation";
+import { getLinksToMove } from "@/features/credentials/merge-credentials";
 import { keptState } from "@/features/lock/kept-state";
 import { shouldLock } from "@/features/lock/lock-rules";
 import { SetupScreen } from "@/features/lock/setup-screen";
@@ -44,9 +49,12 @@ import type { Credential, Folder } from "@/types/vault";
 
 import { createSqliteVaultRepository } from "./sqlite-vault-repository";
 import {
+  deleteAutofillLink,
   deleteUnreadableDatabase,
   openVaultDatabase,
+  readAutofillLinks,
   readMasterPassword,
+  writeAutofillLink,
   writeMasterPassword,
 } from "./vault-database";
 import type {
@@ -69,6 +77,14 @@ type VaultContextValue = {
   updateCredential: (id: string, input: CredentialInput) => SaveCredentialResult;
   deleteCredential: (id: string) => CredentialDeletion;
   restoreCredentials: (deletion: CredentialDeletion) => void;
+  mergeCredentials: (
+    keptId: string,
+    input: CredentialInput,
+    mergedIds: string[],
+  ) => (() => void) | null;
+  autofillLinks: AutofillLink[];
+  addAutofillLink: (target: string, credentialId: string) => void;
+  removeAutofillLink: (target: string, credentialId: string) => void;
   lock: () => void;
   masterPassword: string;
   changeMasterPassword: (password: string) => Promise<void>;
@@ -191,6 +207,18 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   // Locks the vault after the app stayed in the background for the chosen time.
   const isUnlocked = session !== null;
+
+  // A login saved from another app is not in this window's copy. Locking reloads it on unlock.
+  // That waits until the user comes back: locking now would show the lock screen, and its
+  // prompt, while they are busy in the other app.
+  const isOutdatedRef = useRef(false);
+  useEffect(() => {
+    if (!isUnlocked) return;
+    return listenForVaultChange(() => {
+      isOutdatedRef.current = true;
+    });
+  }, [isUnlocked]);
+
   useEffect(() => {
     if (!isUnlocked) return;
     let backgroundedAt: number | null = null;
@@ -201,7 +229,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         backgroundedAt = Date.now();
         if (autoLock === "immediately") lock();
       } else if (state === "active") {
-        if (shouldLock(backgroundedAt, Date.now(), autoLock)) lock();
+        // The autofill window counts as this app being active, so it is ruled out here.
+        const isOutdated = isOutdatedRef.current && !isAutofillOpen();
+        if (isOutdated || shouldLock(backgroundedAt, Date.now(), autoLock)) {
+          isOutdatedRef.current = false;
+          lock();
+        }
         backgroundedAt = null;
       }
     });
@@ -233,6 +266,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         isDeviceLockOn={deviceLockOn}
         onUnlockWithPassword={unlockPassword}
         onUnlockWithDeviceLock={unlockDevice}
+        shouldHoldPrompt={isAutofillOpen}
       />
     );
   }
@@ -274,6 +308,52 @@ function LoadedVaultProvider({
   const [folders, setFolders] = useState(() => repository.getFolders());
   const [credentials, setCredentials] = useState(() => repository.getCredentials());
   const [masterPassword, setMasterPassword] = useState(() => readMasterPassword(db) ?? "");
+
+  const [autofillLinks, setAutofillLinks] = useState(() => readAutofillLinks(db));
+
+  // Keeps the titles in autofill offers current, and removes deleted ones.
+  useEffect(() => {
+    setAutofillOfferTitles(getOfferTitles(credentials, autofillLinks));
+  }, [credentials, autofillLinks]);
+
+  // Returns what Undo should run, or null if nothing changed.
+  function mergeCredentials(
+    keptId: string,
+    input: CredentialInput,
+    mergedIds: string[],
+  ): (() => void) | null {
+    const before = repository.getCredentials().find((credential) => credential.id === keptId);
+    if (before === undefined || !repository.updateCredential(keptId, input).ok) return null;
+
+    const movedTargets = getLinksToMove(readAutofillLinks(db), keptId, mergedIds);
+    for (const target of movedTargets) writeAutofillLink(db, target, keptId);
+    const deletions = mergedIds.map((id) => repository.deleteCredential(id));
+    setCredentials(repository.getCredentials());
+    setAutofillLinks(readAutofillLinks(db));
+
+    return () => {
+      for (const deletion of [...deletions].reverse()) repository.restoreCredentials(deletion);
+      repository.updateCredential(keptId, {
+        folderId: before.folderId,
+        title: before.title,
+        username: before.username ?? "",
+        password: before.password,
+      });
+      for (const target of movedTargets) deleteAutofillLink(db, target, keptId);
+      setCredentials(repository.getCredentials());
+      setAutofillLinks(readAutofillLinks(db));
+    };
+  }
+
+  function addAutofillLink(target: string, credentialId: string) {
+    writeAutofillLink(db, target, credentialId);
+    setAutofillLinks(readAutofillLinks(db));
+  }
+
+  function removeAutofillLink(target: string, credentialId: string) {
+    deleteAutofillLink(db, target, credentialId);
+    setAutofillLinks(readAutofillLinks(db));
+  }
 
   // Both functions return the repository's result, so the screen can show a validation error.
   // A rejected name changes nothing, but setFolders then gets the same array and React skips the re-render.
@@ -376,6 +456,10 @@ function LoadedVaultProvider({
         updateCredential,
         deleteCredential,
         restoreCredentials,
+        mergeCredentials,
+        autofillLinks,
+        addAutofillLink,
+        removeAutofillLink,
         lock,
         masterPassword,
         changeMasterPassword,

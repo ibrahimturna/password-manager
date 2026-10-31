@@ -25,6 +25,8 @@ const ICONS = {
   settings: { ios: "gearshape", android: "settings" },
   show: { ios: "eye", android: "visibility" },
   hide: { ios: "eye.slash", android: "visibility_off" },
+  selected: { ios: "checkmark.circle.fill", android: "check_circle" },
+  notSelected: { ios: "circle", android: "radio_button_unchecked" },
 } satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
 
 export type IconName = keyof typeof ICONS;

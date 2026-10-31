@@ -13,9 +13,17 @@ A local-only Android password manager. Nothing leaves the phone.
 - Android backup is turned off.
 - Backup files are encrypted the same way, with the master password at the time of the backup. Making one needs the phone lock when that is on, otherwise the master password. Temporary copies made for sharing are deleted afterwards.
 
+- Autofill never reads the vault until the user passes the phone lock or master password, on every fill or save. Its window is always blocked from screenshots, and uses a separate database connection that closes straight after.
+- A login offered for saving stays in the app's memory, not in the intent, until the user finishes or leaves.
+
 ## Accepted risks
 
 These are deliberate trade-offs, not oversights.
+
+- **Over-the-air updates can change the app's code.** The app installs JavaScript published to its EAS update channel, so whoever holds the Expo account or its `EXPO_TOKEN` could ship code that reads an unlocked vault. Updates are not code-signed yet. Vault data itself never leaves the phone, and this affects the installed app only through that one channel.
+
+- **Autofill trusts app names and browsers.** An app is recognised by its package name, without checking its signature. A website address is only accepted from a fixed list of browsers, so other apps cannot claim to be a website, but a listed browser's report is believed. The first link is always chosen by the user, who sees the app or website name. Websites are matched by site, so every subdomain of a site shares its links, except across public suffixes such as github.io.
+- **Autofill offer titles are not encrypted.** The offer appears before unlocking, so each remembered login's password title is kept in the app's private storage, outside the vault, so that someone with access to that storage learns which logins exist. Usernames and passwords are never kept there. Titles are removed when the password is deleted, the next time the vault is opened.
 
 - **No recovery.** A forgotten master password can only be replaced from an unlocked vault, or by unlocking with the phone lock. There is no recovery code or cloud copy.
 - **Backups are manual.** Uninstalling the app or losing the phone loses everything since the last backup file. Restoring also needs the master password used when that backup was made.
