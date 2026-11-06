@@ -1,56 +1,81 @@
-# Welcome to your Expo app 👋
+# Password Manager
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A local-only password manager for Android, built with Expo and React Native. The vault is encrypted on the phone, nothing is sent to a server, and it fills logins in other apps and browsers through Android's autofill framework.
 
-## Get started
+Built as a learning and portfolio project. The full feature list, in English and Turkish, is in [FEATURES.md](FEATURES.md). The security design and the accepted risks are in [SECURITY.md](SECURITY.md).
 
-1. Install dependencies
+## Highlights
 
-   ```bash
-   npm install
-   ```
+- **Encrypted vault.** SQLCipher database, opened with a random vault key. The key is locked with an Argon2id key from the master password, and optionally a second copy behind the phone's biometrics, PIN or pattern.
+- **Autofill in other apps.** A native Kotlin autofill service fills logins in apps and browsers, offers to save new ones, and remembers which password belongs to which app or website. Every fill asks for the phone lock or the master password first.
+- **Folders.** Nested folders shown as an expandable tree, with search, reordering by drag, Undo after deleting, and multi-select to merge or delete passwords.
+- **Encrypted backups.** Backup files are encrypted the same way. Restoring never deletes anything and asks about every password that differs.
+- **Hardening.** Copied passwords are cleared after 30 seconds, screenshots are blocked by default, the app is hidden in recent apps, Android backup is off, and the vault locks after leaving the app.
+- **Updates without a new APK.** Every push to `master` publishes an over-the-air update. The app asks before installing it.
+- **English and Turkish, light and dark themes.**
 
-2. Start the app
+## Tech stack
 
-   ```bash
-   npx expo start
-   ```
+| Area | What it uses |
+| --- | --- |
+| App | Expo SDK 58, React Native 0.88, React 19, TypeScript (strict) |
+| Navigation | Expo Router, with file-based routes in `src/app/` |
+| Storage | `expo-sqlite` with SQLCipher |
+| Keys and crypto | `react-native-quick-crypto` (Argon2id, AES-GCM), `expo-secure-store`, `expo-local-authentication` |
+| Autofill | A local Expo module in Kotlin, `modules/password-autofill/` |
+| Drag and drop | `react-native-reorderable-list` |
+| Tests | Jest with `jest-expo` |
+| Builds and updates | EAS Build, EAS Update, GitHub Actions |
 
-In the output, you'll find options to open the app in a
+## How the code is organised
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+src/
+  app/          Screens. Every file is a route, _layout.tsx sets up the providers and the stack.
+  components/   Shared UI: dialogs, switches, settings rows, icons, password input.
+  data/         The vault repository: rules in memory, SQLite saving, React context.
+  features/     One folder per feature: autofill, backup, credentials, folders, lock,
+                search, settings, undo. Pure logic lives next to its tests.
+  i18n/         English and Turkish texts. TypeScript reports missing or extra texts.
+  theme/        Colour palettes for the light and dark themes.
+modules/
+  password-autofill/   Kotlin autofill service, autofill window and the JavaScript bridge.
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Screens never touch the database directly. They call the vault context, which calls a repository. The repository keeps all the rules in memory, and the SQLite version writes only what changed, in one transaction.
 
-### Other setup steps
+## Running it
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+You need Node.js, an Android phone or emulator, and an [Expo](https://expo.dev) account for builds.
 
-## Learn more
+The app uses native code (SQLCipher and the autofill service), so it does not run in Expo Go. It needs a development build:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm install
+npx eas-cli@latest build --platform android --profile development
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Install the APK on the phone, then start the development server:
 
-## Join the community
+```bash
+npx expo start
+```
 
-Join our community of developers creating universal apps.
+## Checks
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx tsc --noEmit
+npx expo lint
+npx jest
+```
+
+## Releases and updates
+
+- `preview` builds an installable APK on EAS: `npx eas-cli@latest build --platform android --profile preview`.
+- Every push to `master` runs `.github/workflows/update.yml`. It typechecks, runs the tests and publishes an Android update to the `preview` channel. It needs an `EXPO_TOKEN` repository secret.
+- Updates are matched by a native fingerprint, so JavaScript changes reach installed apps, but changes to native code or native packages need a new build.
+- The app checks on start and asks before installing. **Settings → App version** checks again.
+
+## License
+
+See [LICENSE](LICENSE).

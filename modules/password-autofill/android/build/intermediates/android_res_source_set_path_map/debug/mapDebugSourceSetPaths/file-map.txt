@@ -1,9 +1,0 @@
-expo.modules.passwordautofill.password-autofill-pngs-0 D:\Projects\password-manager\modules\password-autofill\android\build\generated\res\pngs\debug
-expo.modules.passwordautofill.password-autofill-updated_navigation_xml-1 D:\Projects\password-manager\modules\password-autofill\android\build\generated\updated_navigation_xml\debug
-expo.modules.passwordautofill.password-autofill-mergeDebugResources-2 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\incremental\debug\mergeDebugResources\merged.dir
-expo.modules.passwordautofill.password-autofill-mergeDebugResources-3 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\incremental\debug\mergeDebugResources\stripped.dir
-expo.modules.passwordautofill.password-autofill-debug-4 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\merged_res\debug\mergeDebugResources
-expo.modules.passwordautofill.password-autofill-debug-5 D:\Projects\password-manager\modules\password-autofill\android\build\intermediates\packaged_res\debug\packageDebugResources
-expo.modules.passwordautofill.password-autofill-debug-6 D:\Projects\password-manager\modules\password-autofill\android\src\debug\res
-expo.modules.passwordautofill.password-autofill-main-7 D:\Projects\password-manager\modules\password-autofill\android\src\main\res
-gradleHome-0 D:\Android\gradle

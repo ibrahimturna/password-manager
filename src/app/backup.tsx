@@ -1,4 +1,5 @@
 import type { File } from "expo-file-system";
+import { router } from "expo-router";
 import { type ComponentRef, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { getWebsiteTarget } from "../../modules/password-autofill";
 
 import { PasswordInput } from "@/components/password-input";
 import { Snackbar } from "@/components/snackbar";
@@ -27,7 +30,16 @@ import {
   type RestoreChoice,
   type RestorePlan,
 } from "@/features/backup/restore-plan";
+import {
+  type Browser,
+  type ImportPlan,
+  planBrowserImport,
+  readBrowserExport,
+} from "@/features/backup/browser-import";
+import { recordBackup } from "@/features/backup/backup-reminder";
 import { RestoreReview } from "@/features/backup/restore-review";
+import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
+import { useUndo } from "@/features/undo/undo-context";
 import { useKeptRoute } from "@/features/lock/use-kept-state";
 import type { VaultContents } from "@/data/vault-repository";
 import { useTranslation } from "@/i18n/use-translation";
@@ -55,7 +67,15 @@ export default function BackupScreen() {
     verifyUser,
     whileOutsideApp,
     restoreBackup,
+    autofillLinks,
+    importLogins,
   } = useVault();
+  const { expandWithParents } = useExpandedFolders();
+  const { offerUndo } = useUndo();
+  // A browser export that was read, waiting for the user to confirm.
+  const [importReview, setImportReview] = useState<{ browser: Browser; plan: ImportPlan } | null>(
+    null,
+  );
   useKeptRoute("/backup");
 
   const [current, setCurrent] = useState("");
@@ -115,6 +135,7 @@ export default function BackupScreen() {
     if (folder === null) return;
     await runBusy(async () => {
       await saveBackup(folder, { folders, credentials }, masterPassword);
+      recordBackup();
       showNotice(t.backup.saved);
     });
   }
@@ -122,7 +143,11 @@ export default function BackupScreen() {
   // The share screen may stay open for long, so the normal auto-lock keeps working here.
   async function share() {
     if (!(await verify())) return;
-    await runBusy(() => shareBackup({ folders, credentials }, masterPassword));
+    // Android does not say whether the file was really sent, so closing the share menu counts.
+    await runBusy(async () => {
+      await shareBackup({ folders, credentials }, masterPassword);
+      recordBackup();
+    });
   }
 
   async function chooseFile() {
@@ -154,6 +179,39 @@ export default function BackupScreen() {
         showNotice(t.backup.notABackup);
       }
     });
+  }
+
+  async function chooseImportFile() {
+    const file = await whileOutsideApp(pickBackupFile);
+    if (file === null) return;
+    await runBusy(async () => {
+      const exported = readBrowserExport(await file.text());
+      if (exported === null) {
+        showNotice(t.browserImport.notAnExport);
+        return;
+      }
+      const plan = planBrowserImport(
+        exported.logins,
+        credentials,
+        autofillLinks,
+        (url) => getWebsiteTarget(url)?.key ?? null,
+      );
+      if (plan.items.length === 0) {
+        showNotice(t.browserImport.nothingNew);
+        return;
+      }
+      setImportReview({ browser: exported.browser, plan });
+    });
+  }
+
+  // Undo is offered on the home screen, which then shows the new folder open.
+  function importNow() {
+    if (importReview === null) return;
+    const { browser, plan } = importReview;
+    const { folderId, undo } = importLogins(t.browserImport.folderName(browser), plan.items);
+    expandWithParents(folderId);
+    offerUndo(t.browserImport.imported(plan.items.length), undo);
+    router.dismissTo("/");
   }
 
   function restore(plan: RestorePlan, choices: ReadonlyMap<string, RestoreChoice>) {
@@ -272,6 +330,43 @@ export default function BackupScreen() {
           </>
         )}
 
+        <Text style={styles.title}>{t.browserImport.title}</Text>
+        <Text style={styles.text}>{t.browserImport.note}</Text>
+        {importReview === null ? (
+          <Pressable
+            onPress={chooseImportFile}
+            disabled={isBusy}
+            style={styles.mainButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.mainButtonText}>{t.browserImport.chooseFile}</Text>
+          </Pressable>
+        ) : (
+          <>
+            <Text style={styles.summary}>
+              {t.browserImport.summary(
+                importReview.browser,
+                importReview.plan.items.length,
+                importReview.plan.alreadyHere,
+                importReview.plan.unusable,
+              )}
+            </Text>
+            <Text style={styles.error}>{t.browserImport.deleteFile}</Text>
+            <View style={styles.buttons}>
+              <Pressable
+                onPress={() => setImportReview(null)}
+                style={styles.button}
+                accessibilityRole="button"
+              >
+                <Text style={styles.cancelText}>{t.backup.cancel}</Text>
+              </Pressable>
+              <Pressable onPress={importNow} style={styles.mainButton} accessibilityRole="button">
+                <Text style={styles.mainButtonText}>{t.browserImport.import}</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
+
         {isBusy && <ActivityIndicator color={colors.primary} />}
       </ScrollView>
 
@@ -300,6 +395,10 @@ function createStyles(colors: Palette) {
     },
     error: {
       color: colors.error,
+    },
+    summary: {
+      fontSize: 16,
+      color: colors.onSurface,
     },
     mainButton: {
       alignItems: "center",

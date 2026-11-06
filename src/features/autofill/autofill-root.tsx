@@ -2,6 +2,7 @@ import { randomUUID } from "expo-crypto";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -68,7 +69,7 @@ export function AutofillRoot() {
   );
 }
 
-type Phase = "starting" | "locked" | "picking" | "updating";
+type Phase = "starting" | "opening" | "locked" | "picking" | "updating";
 
 function AutofillScreen() {
   const t = useTranslation();
@@ -244,6 +245,7 @@ function AutofillScreen() {
       if (vaultKey === null) {
         cancel();
       } else {
+        setPhase("opening");
         await openVault(vaultKey);
       }
     } catch {
@@ -253,6 +255,14 @@ function AutofillScreen() {
 
   if (phase === "starting") {
     return null;
+  }
+
+  if (phase === "opening") {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
   }
 
   if (phase === "locked") {
@@ -363,6 +373,10 @@ function createStyles(colors: Palette) {
     screen: {
       flex: 1,
       backgroundColor: colors.surface,
+    },
+    centered: {
+      alignItems: "center",
+      justifyContent: "center",
     },
     sheetArea: {
       flex: 1,

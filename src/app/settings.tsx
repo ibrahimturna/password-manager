@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { AppState, Platform, ScrollView } from "react-native";
+import { ActivityIndicator, AppState, Platform, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { isAutofillProvider, openAutofillProviderSettings } from "../../modules/password-autofill";
@@ -16,6 +16,7 @@ import { VerifyPasswordDialog } from "@/features/lock/verify-password-dialog";
 import { canUpdate, isUpdateAvailable, UpdateDialog } from "@/features/settings/app-update";
 import { useSettings } from "@/features/settings/settings-context";
 import { useTranslation } from "@/i18n/use-translation";
+import { useTheme } from "@/theme/use-theme";
 
 type OpenChoice = "language" | "theme" | "autoLock" | null;
 
@@ -37,6 +38,7 @@ export default function SettingsScreen() {
   } = useSettings();
   const { deviceLockAvailable, deviceLockOn, setDeviceLockOn, verifyUser } = useVault();
   const t = useTranslation();
+  const { colors } = useTheme();
   useKeptRoute("/settings");
   const insets = useSafeAreaInsets();
   const [updateCheck, setUpdateCheck] = useState<"idle" | "checking" | "upToDate" | "failed">(
@@ -218,7 +220,9 @@ export default function SettingsScreen() {
         title={t.settings.version}
         subtitle={`${Constants.expoConfig?.version ?? ""} · ${getVersionNote()}`}
         onPress={canUpdate && updateCheck !== "checking" ? checkForUpdate : undefined}
-      />
+      >
+        {updateCheck === "checking" && <ActivityIndicator color={colors.primary} />}
+      </SettingsRow>
       {isUpdateOpen && <UpdateDialog onClose={() => setIsUpdateOpen(false)} />}
 
       {isAskingPassword && (

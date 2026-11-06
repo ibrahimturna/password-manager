@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="password_autofill_inline_title">Girişi doldur</string>
-    <string name="password_autofill_no_username">Bu şifre için kayıtlı kullanıcı adı yok.</string>
-    <string name="password_autofill_offer">Şifre Yöneticisi ile doldur</string>
-    <string name="password_autofill_offer_title">Doldur: %1$s</string>
-    <string name="password_autofill_service_name">Şifre Yöneticisi</string>
-</resources>

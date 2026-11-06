@@ -47,6 +47,8 @@ import { useTranslation } from "@/i18n/use-translation";
 import { useTheme } from "@/theme/use-theme";
 import type { Credential, Folder } from "@/types/vault";
 
+import type { ImportItem } from "@/features/backup/browser-import";
+
 import { createSqliteVaultRepository } from "./sqlite-vault-repository";
 import {
   deleteAutofillLink,
@@ -80,6 +82,8 @@ type VaultContextValue = {
   restoreCredentials: (deletion: CredentialDeletion) => void;
   // Returns what Undo should run.
   deleteCredentials: (ids: string[]) => () => void;
+  // Puts the items in a new top-level folder. Returns that folder and what Undo should run.
+  importLogins: (folderName: string, items: ImportItem[]) => { folderId: string; undo: () => void };
   mergeCredentials: (
     keptId: string,
     input: CredentialInput,
@@ -411,6 +415,43 @@ function LoadedVaultProvider({
     setCredentials(repository.getCredentials());
   }
 
+  function importLogins(folderName: string, items: ImportItem[]) {
+    // "Imported from Chrome (2)" when the first name is taken.
+    let folderId: string | null = null;
+    for (let copy = 1; folderId === null; copy++) {
+      const result = repository.createFolder(copy === 1 ? folderName : `${folderName} (${copy})`, null);
+      if (result.ok) folderId = result.folder.id;
+      else if (result.error !== "duplicate") throw new Error(`Cannot create folder: ${result.error}`);
+    }
+    const created = repository.createCredentials(
+      items.map((item) => ({ ...item.input, folderId: folderId as string })),
+    );
+    const linked = created.flatMap((credential, i) => {
+      const target = items[i].target;
+      return target === null ? [] : [{ target, credentialId: credential.id }];
+    });
+    db.withTransactionSync(() => {
+      for (const link of linked) writeAutofillLink(db, link.target, link.credentialId);
+    });
+    setFolders(repository.getFolders());
+    setCredentials(repository.getCredentials());
+    setAutofillLinks(readAutofillLinks(db));
+
+    const importedFolderId = folderId;
+    return {
+      folderId: importedFolderId,
+      undo: () => {
+        db.withTransactionSync(() => {
+          for (const link of linked) deleteAutofillLink(db, link.target, link.credentialId);
+        });
+        repository.deleteFolder(importedFolderId);
+        setFolders(repository.getFolders());
+        setCredentials(repository.getCredentials());
+        setAutofillLinks(readAutofillLinks(db));
+      },
+    };
+  }
+
   function deleteCredentials(ids: string[]) {
     const deletions = ids.map((id) => repository.deleteCredential(id));
     setCredentials(repository.getCredentials());
@@ -472,6 +513,7 @@ function LoadedVaultProvider({
         deleteCredential,
         restoreCredentials,
         deleteCredentials,
+        importLogins,
         moveFolder,
         mergeCredentials,
         autofillLinks,

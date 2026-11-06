@@ -2,7 +2,7 @@
 
 **English** · [Türkçe](#türkçe)
 
-Local-only password manager for Android, version 1.0.3. It needs Android 7.0 or newer. iOS is not tested.
+Local-only password manager for Android, version 1.0.4. It needs Android 7.0 or newer. iOS is not tested.
 
 ## English
 
@@ -19,6 +19,7 @@ Local-only password manager for Android, version 1.0.3. It needs Android 7.0 or 
 - Open a password to view, edit, move to another folder or delete it.
 - Passwords are hidden until you tap the eye button.
 - Copy a password with its copy button in the list.
+- Generate a password from the password form: 8 to 64 characters, with uppercase, lowercase, numbers and symbols you can switch off. Every chosen kind appears at least once.
 - Long-press a password to start selecting, then tap more to merge or delete them together. Deleting can be undone.
 - Tap Reorder on the home screen, or long-press a top-level folder, to change the order of the top-level folders, with everything closed while you do. Long-press a subfolder to change its order inside its parent folder, when that folder has more than one subfolder.
 - The password itself never appears in the folder list.
@@ -57,6 +58,8 @@ Local-only password manager for Android, version 1.0.3. It needs Android 7.0 or 
 - Save the file to a folder you pick, starting from Documents, or send it through Android's Share menu.
 - Restore a backup file with the master password used when it was made.
 - Restoring adds new folders and passwords, skips what is already there and never deletes anything.
+- Import a password export (CSV) from Chrome or Firefox. Each login becomes its own password in a new "Imported from Chrome" or "Imported from Firefox" folder, linked to its website for autofill. Logins already here are skipped, and the import can be undone. Chrome's notes are not imported.
+- When there has been no backup for 30 days, or never, the home screen shows a reminder. "Later" hides it for 7 days.
 - Before restoring, the backup is shown as a folder tree, with each item marked new, already here or different.
 - When a password differs between the phone and the backup, you see the current version and the backup version with their differences highlighted. You must choose one for every such password, one by one or all at once, before restoring. Showing the passwords is optional.
 
@@ -101,7 +104,7 @@ Everything else works the same on all supported versions, as long as the phone h
 
 ## Türkçe
 
-Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.3. Android 7.0 veya üzeri gerekir. iOS'ta test edilmedi.
+Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.4. Android 7.0 veya üzeri gerekir. iOS'ta test edilmedi.
 
 ### Klasörler
 
@@ -116,6 +119,7 @@ Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.3.
 - Bir şifreyi açarak görüntüleyin, düzenleyin, başka klasöre taşıyın veya silin.
 - Şifreler göz düğmesine dokunana kadar gizlidir.
 - Şifreyi listedeki kopyalama düğmesiyle kopyalayın.
+- Şifre formundan şifre oluşturun: 8 ile 64 karakter arası; büyük harf, küçük harf, rakam ve simgeleri kapatabilirsiniz. Seçilen her tür en az bir kez bulunur.
 - Seçime başlamak için bir şifreye basılı tutun, sonra birlikte birleştirmek veya silmek için diğerlerine dokunun. Silme işlemi geri alınabilir.
 - Üst düzey klasörlerin sırasını değiştirmek için ana ekranda Sırala'ya dokunun veya bir üst düzey klasöre basılı tutun; bu sırada her şey kapalı kalır. Bir alt klasöre basılı tutarak, üst klasörde birden fazla alt klasör varsa o klasör içindeki sırasını değiştirin.
 - Şifrenin kendisi klasör listesinde hiçbir zaman görünmez.
@@ -154,6 +158,8 @@ Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.3.
 - Dosyayı Belgeler'den başlayarak seçtiğiniz bir klasöre kaydedin veya Android'in Paylaş menüsüyle gönderin.
 - Yedek dosyasını, oluşturulduğu sırada kullanılan ana şifreyle geri yükleyin.
 - Geri yükleme yeni klasör ve şifreleri ekler, zaten mevcut olanları atlar ve hiçbir şeyi silmez.
+- Chrome veya Firefox'tan bir şifre dışa aktarımını (CSV) içe aktarın. Her giriş, yeni bir "Chrome'dan aktarılanlar" veya "Firefox'tan aktarılanlar" klasöründe kendi şifresi olur ve otomatik doldurma için web sitesine bağlanır. Zaten olan girişler atlanır ve içe aktarma geri alınabilir. Chrome'daki notlar aktarılmaz.
+- 30 gündür veya hiç yedek alınmadıysa ana ekranda bir hatırlatma görünür. "Sonra" onu 7 gün gizler.
 - Geri yüklemeden önce yedek, her öğesi yeni, zaten var veya farklı olarak işaretlenmiş bir klasör ağacı olarak gösterilir.
 - Bir şifre telefonda ve yedekte farklıysa mevcut sürümü ve yedekteki sürümü, farkları vurgulanmış olarak görürsünüz. Geri yüklemeden önce bu tür her şifre için tek tek veya toplu olarak bir sürüm seçmeniz gerekir. Şifreleri göstermek isteğe bağlıdır.
 

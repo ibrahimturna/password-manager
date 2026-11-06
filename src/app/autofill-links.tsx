@@ -1,6 +1,14 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -32,7 +40,8 @@ export default function AutofillLinksScreen() {
   const { autofillLinks, addAutofillLink, removeAutofillLink } = useVault();
   useKeptRoute({ pathname: "/autofill-links", params: { credentialId } });
 
-  const [apps, setApps] = useState<AutofillTarget[]>([]);
+  // Null while the installed apps load. That can take a moment on slower phones.
+  const [apps, setApps] = useState<AutofillTarget[] | null>(null);
   const [website, setWebsite] = useState("");
   const [isWebsiteWrong, setIsWebsiteWrong] = useState(false);
   const [query, setQuery] = useState("");
@@ -59,12 +68,12 @@ export default function AutofillLinksScreen() {
       {linked.length === 0 && <Text style={styles.text}>{t.autofillLinks.none}</Text>}
       {linked.map((key) => (
         <View key={key} style={styles.row}>
-          <Text style={styles.rowText}>{getTargetLabel(key, apps)}</Text>
+          <Text style={styles.rowText}>{getTargetLabel(key, apps ?? [])}</Text>
           <Pressable
             onPress={() => removeAutofillLink(key, credentialId)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={t.autofillLinks.remove(getTargetLabel(key, apps))}
+            accessibilityLabel={t.autofillLinks.remove(getTargetLabel(key, apps ?? []))}
           >
             <Icon name="delete" color={colors.error} />
           </Pressable>
@@ -111,9 +120,12 @@ export default function AutofillLinksScreen() {
 
   return (
     <FlatList
-      data={filterApps(apps, linked, query)}
+      data={filterApps(apps ?? [], linked, query)}
       keyExtractor={(app) => app.key}
       ListHeaderComponent={header}
+      ListEmptyComponent={
+        apps === null ? <ActivityIndicator color={colors.primary} style={styles.loading} /> : undefined
+      }
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 16 }]}
       renderItem={({ item }) => (
@@ -132,6 +144,9 @@ export default function AutofillLinksScreen() {
 
 function createStyles(colors: Palette) {
   return StyleSheet.create({
+    loading: {
+      marginTop: 24,
+    },
     content: {
       padding: 16,
     },

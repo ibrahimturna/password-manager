@@ -36,8 +36,8 @@ export type SaveCredentialResult =
 export type CredentialDeletion = RemovedItem<Credential>[];
 
 // The only way the app reads or changes vault data.
-// Screens depend on this type, not on where the data is stored, so the in-memory
-// version below can be replaced by a SQLite version in Milestone 6.
+// Screens depend on this type, not on where the data is stored. The SQLite version wraps
+// the in-memory one below and saves every change.
 export type VaultRepository = {
   getFolders(): Folder[];
   getCredentials(): Credential[];
@@ -53,6 +53,8 @@ export type VaultRepository = {
 
   // On success, returns the saved credential (with its id and timestamps).
   createCredential(input: CredentialInput): SaveCredentialResult;
+  // Creates many at once, in the same order. Inputs must already be valid.
+  createCredentials(inputs: CredentialInput[]): Credential[];
   updateCredential(id: string, input: CredentialInput): SaveCredentialResult;
   // Returns what was removed, so the delete can be undone with restoreCredentials.
   deleteCredential(id: string): CredentialDeletion;
@@ -159,6 +161,15 @@ export function createInMemoryVaultRepository(
       const id = generateId();
       credentials = addCredential(credentials, id, validation.value, now());
       return { ok: true, credential: requireCredential(id) };
+    },
+
+    createCredentials(inputs) {
+      return inputs.map((input) => {
+        const result = this.createCredential(input);
+        // The caller checked every input, so a refusal here is a bug in the app.
+        if (!result.ok) throw new Error("Cannot create an invalid credential.");
+        return result.credential;
+      });
     },
 
     updateCredential(id, input) {

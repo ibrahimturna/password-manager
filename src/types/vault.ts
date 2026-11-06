@@ -14,7 +14,6 @@ export type Credential = {
   title: string;
   username: string | null;
   // Encrypted on disk, but plain text in memory while the app runs.
-  // Only fake data until the vault is protected by a master password (Milestone 7).
   password: string;
   // Milliseconds since the Unix epoch (Date.now()).
   createdAt: number;

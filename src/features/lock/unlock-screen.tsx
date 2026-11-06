@@ -40,7 +40,7 @@ export function UnlockScreen({
     function ask() {
       if (hasAskedRef.current || shouldHoldPrompt?.() === true) return;
       hasAskedRef.current = true;
-      void onUnlockWithDeviceLock();
+      void unlockWithDevice();
     }
 
     if (AppState.currentState === "active") ask();
@@ -48,7 +48,15 @@ export function UnlockScreen({
       if (state === "active") ask();
     });
     return () => subscription.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unlockWithDevice only wraps onUnlockWithDeviceLock.
   }, [isDeviceLockOn, onUnlockWithDeviceLock, shouldHoldPrompt]);
+
+  // Shows the spinner while the vault opens. Cancelling the prompt hides it again.
+  async function unlockWithDevice() {
+    setIsBusy(true);
+    await onUnlockWithDeviceLock();
+    setIsBusy(false);
+  }
 
   async function unlock() {
     if (password === "" || isBusy) return;
@@ -93,7 +101,8 @@ export function UnlockScreen({
 
       {isDeviceLockOn && (
         <Pressable
-          onPress={onUnlockWithDeviceLock}
+          onPress={unlockWithDevice}
+          disabled={isBusy}
           style={styles.secondaryButton}
           accessibilityRole="button"
         >

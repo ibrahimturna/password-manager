@@ -27,6 +27,7 @@ import {
   useKeptState,
 } from "@/features/lock/use-kept-state";
 import { copyPassword } from "@/features/credentials/copy-password";
+import { PasswordGeneratorDialog } from "@/features/credentials/password-generator-dialog";
 import {
   type CredentialFieldErrors,
   MAX_PASSWORD_LENGTH,
@@ -91,6 +92,7 @@ export default function CredentialFormScreen() {
   );
   const [errors, setErrors] = useState<CredentialFieldErrors>({});
   const [isCopied, setIsCopied] = useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   // True after Save was tapped without a folder: the folder hint turns red.
   const [isFolderMissing, setIsFolderMissing] = useState(false);
   // A short message at the bottom of the screen, or null.
@@ -216,6 +218,15 @@ export default function CredentialFormScreen() {
         hideLabel={t.credentialForm.hidePassword}
       >
         <Pressable
+          onPress={() => setIsGeneratorOpen(true)}
+          hitSlop={8}
+          style={styles.fieldButton}
+          accessibilityRole="button"
+          accessibilityLabel={t.generator.title}
+        >
+          <Icon name="generate" color={colors.primary} />
+        </Pressable>
+        <Pressable
           onPress={copy}
           disabled={password === ""}
           hitSlop={8}
@@ -318,6 +329,16 @@ export default function CredentialFormScreen() {
 
       {notice !== null && <Snackbar message={notice} bottom={insets.bottom + 16} />}
 
+      {isGeneratorOpen && (
+        <PasswordGeneratorDialog
+          onCancel={() => setIsGeneratorOpen(false)}
+          onUse={(generated) => {
+            setIsGeneratorOpen(false);
+            setPassword(generated);
+            setErrors((current) => ({ ...current, password: undefined }));
+          }}
+        />
+      )}
       <ConfirmDialog
         visible={isDeleteDialogOpen}
         title={t.deleteCredential.title}

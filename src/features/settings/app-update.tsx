@@ -1,8 +1,10 @@
 import * as Updates from "expo-updates";
 import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useTranslation } from "@/i18n/use-translation";
+import { useTheme } from "@/theme/use-theme";
 
 // Updates only exist in installed builds. A development build loads its code from the
 // development server instead, and the update functions reject there.
@@ -32,6 +34,7 @@ export function UpdatePrompt() {
 // Downloads the update, then restarts the app with it. Restarting locks the vault.
 export function UpdateDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslation();
+  const { colors } = useTheme();
   const [phase, setPhase] = useState<"ask" | "downloading" | "failed">("ask");
 
   async function install() {
@@ -61,6 +64,8 @@ export function UpdateDialog({ onClose }: { onClose: () => void }) {
       onCancel={onClose}
       onConfirm={phase === "downloading" ? () => undefined : install}
       isDestructive={false}
-    />
+    >
+      {phase === "downloading" && <ActivityIndicator color={colors.primary} />}
+    </ConfirmDialog>
   );
 }

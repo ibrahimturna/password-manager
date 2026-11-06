@@ -54,6 +54,8 @@ export function createSqliteVaultRepository(
     deleteFolder: (id) => saved(() => memory.deleteFolder(id)),
     restoreDeletion: (deletion) => saved(() => memory.restoreDeletion(deletion)),
     createCredential: (input) => saved(() => memory.createCredential(input)),
+    // One save for all of them, so a large import is a single transaction.
+    createCredentials: (inputs) => saved(() => memory.createCredentials(inputs)),
     updateCredential: (id, input) => saved(() => memory.updateCredential(id, input)),
     deleteCredential: (id) => saved(() => memory.deleteCredential(id)),
     restoreCredentials: (deletion) => saved(() => memory.restoreCredentials(deletion)),

@@ -58,6 +58,19 @@ export const tr: Translations = {
       passwordTooLong: (max: number) => `Şifre en fazla ${max} karakter olabilir.`,
     },
   },
+  generator: {
+    title: "Şifre oluştur",
+    another: "Başka bir tane oluştur",
+    length: "Uzunluk",
+    shorter: "Kısalt",
+    longer: "Uzat",
+    uppercase: "Büyük harfler (A–Z)",
+    lowercase: "Küçük harfler (a–z)",
+    numbers: "Rakamlar (0–9)",
+    symbols: "Simgeler (!@#…)",
+    cancel: "İptal",
+    use: "Kullan",
+  },
   deleteFolder: {
     title: "Klasörü sil",
     willDelete: "Şunlar silinecek:",
@@ -94,7 +107,6 @@ export const tr: Translations = {
     cancel: "İptal",
     confirm: "Sil",
     deleted: (title: string) => `“${title}” silindi`,
-    undo: "Geri al",
   },
   lock: {
     setupTitle: "Ana şifrenizi oluşturun",
@@ -133,9 +145,7 @@ export const tr: Translations = {
     device: "Cihaz",
     light: "Açık",
     dark: "Koyu",
-    security: "Güvenlik",
     masterPassword: "Ana şifre",
-    changeMasterPassword: "Ana şifreyi değiştir",
     deviceLock: "Telefon kilidiyle aç",
     allowScreenshots: "Ekran görüntüsüne izin ver",
     allowScreenshotsNote: "Bu kapalıyken ekran görüntüsü alınamaz.",
@@ -212,6 +222,31 @@ export const tr: Translations = {
     upToDate: "Bu en son sürüm",
     checkFailed: "Denetlenemedi. Bağlantınızı kontrol edin.",
     devOnly: "Güncellemeler yalnızca yüklü uygulamada çalışır",
+  },
+  backupReminder: {
+    message: "Bir süredir yedek almadınız. Yedek olmadan telefonunuzu kaybetmek veya sıfırlamak şifrelerinizi kaybettirir.",
+    backUp: "Yedekle",
+    later: "Sonra",
+  },
+  browserImport: {
+    title: "Tarayıcıdan içe aktar",
+    note: "Şifrelerinizi Chrome veya Firefox'tan CSV dosyası olarak dışa aktarın, sonra buradan seçin. Her giriş yeni bir klasörde kendi şifresi olur ve otomatik doldurma için web sitesine bağlanır.",
+    chooseFile: "CSV dosyası seç",
+    notAnExport: "Bu bir Chrome veya Firefox şifre dışa aktarımı değil.",
+    nothingNew: "Bu dosyadaki her şey zaten burada.",
+    summary: (browser: "chrome" | "firefox", count: number, alreadyHere: number, unusable: number) =>
+      [
+        `${browser === "chrome" ? "Chrome'dan" : "Firefox'tan"} ${count} yeni giriş.`,
+        alreadyHere > 0 ? `${alreadyHere} tanesi zaten burada.` : "",
+        unusable > 0 ? `${unusable} tanesi içe aktarılamaz (şifre yok veya çok uzun).` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+    deleteFile: "CSV dosyası tüm şifreleri düz metin olarak içerir. İçe aktardıktan sonra telefonunuzdan silin.",
+    import: "İçe aktar",
+    folderName: (browser: "chrome" | "firefox") =>
+      `${browser === "chrome" ? "Chrome'dan" : "Firefox'tan"} aktarılanlar`,
+    imported: (count: number) => `${count} giriş içe aktarıldı`,
   },
   backup: {
     title: "Yedekleme ve geri yükleme",

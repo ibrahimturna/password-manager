@@ -28,6 +28,7 @@ import { FolderReorderList } from "@/features/folders/folder-reorder-list";
 import { FolderTreeList } from "@/features/folders/folder-tree-list";
 import { DeleteFolderDialog } from "@/features/folders/delete-folder-dialog";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
+import { readReminderState, shouldRemind, snoozeReminder } from "@/features/backup/backup-reminder";
 import { copyPassword } from "@/features/credentials/copy-password";
 import { useKeptState } from "@/features/lock/use-kept-state";
 import { searchVault } from "@/features/search/search";
@@ -66,6 +67,10 @@ export default function HomeScreen() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { pendingUndo, offerUndo, runUndo, dismissUndo } = useUndo();
+
+  // Read again whenever this screen comes back, so a backup made meanwhile hides the card.
+  const [reminder, setReminder] = useState(readReminder);
+  const isReminderShown = shouldRemind(reminder.state, credentials.length, reminder.checkedAt);
 
   // The passwords chosen to merge or delete, or null when not selecting.
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string> | null>(null);
@@ -234,6 +239,7 @@ export default function HomeScreen() {
   // screen offers its Undo after this cleanup has already run, so that Undo survives.)
   useFocusEffect(
     useCallback(() => {
+      setReminder(readReminder());
       return () => {
         setMenuFolderId(null);
         setIsAddMenuOpen(false);
@@ -295,6 +301,30 @@ export default function HomeScreen() {
         </>
       ) : (
         <>
+          {isReminderShown && selectedIds === null && (
+            <View style={styles.reminder}>
+              <Text style={styles.reminderText}>{t.backupReminder.message}</Text>
+              <View style={styles.reminderButtons}>
+                <Pressable
+                  onPress={() => {
+                    snoozeReminder();
+                    setReminder(readReminder());
+                  }}
+                  style={styles.reminderButton}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.collapseText}>{t.backupReminder.later}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push("/backup")}
+                  style={[styles.reminderButton, styles.mainBarButton]}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.mainBarText}>{t.backupReminder.backUp}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
           <View style={styles.listActions}>
             {selectedIds !== null ? (
               <Pressable
@@ -500,6 +530,11 @@ export default function HomeScreen() {
   );
 }
 
+// The time is read here, not while drawing, so the screen shows the same thing until it is checked again.
+function readReminder() {
+  return { state: readReminderState(), checkedAt: Date.now() };
+}
+
 function createStyles(colors: Palette) {
   return StyleSheet.create({
     container: {
@@ -537,6 +572,26 @@ function createStyles(colors: Palette) {
     },
     hidden: {
       display: "none",
+    },
+    reminder: {
+      gap: 8,
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: colors.secondaryContainer,
+    },
+    reminderText: {
+      fontSize: 15,
+      color: colors.onSecondaryContainer,
+    },
+    reminderButtons: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 8,
+    },
+    reminderButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
     },
     listActions: {
       flexDirection: "row",

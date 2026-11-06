@@ -56,6 +56,19 @@ export const en = {
       passwordTooLong: (max: number) => `Password can be at most ${max} characters.`,
     },
   },
+  generator: {
+    title: "Generate password",
+    another: "Make another",
+    length: "Length",
+    shorter: "Shorter",
+    longer: "Longer",
+    uppercase: "Uppercase letters (A–Z)",
+    lowercase: "Lowercase letters (a–z)",
+    numbers: "Numbers (0–9)",
+    symbols: "Symbols (!@#…)",
+    cancel: "Cancel",
+    use: "Use",
+  },
   deleteFolder: {
     title: "Delete folder",
     willDelete: "The following will be deleted:",
@@ -92,7 +105,6 @@ export const en = {
     cancel: "Cancel",
     confirm: "Delete",
     deleted: (title: string) => `“${title}” deleted`,
-    undo: "Undo",
   },
   lock: {
     setupTitle: "Create your master password",
@@ -131,9 +143,7 @@ export const en = {
     device: "Device",
     light: "Light",
     dark: "Dark",
-    security: "Security",
     masterPassword: "Master password",
-    changeMasterPassword: "Change master password",
     deviceLock: "Unlock with phone lock",
     allowScreenshots: "Allow screenshots",
     allowScreenshotsNote: "While this is off, screenshots are blocked.",
@@ -211,6 +221,31 @@ export const en = {
     upToDate: "This is the latest version",
     checkFailed: "Could not check. Check your connection.",
     devOnly: "Updates only work in the installed app",
+  },
+  backupReminder: {
+    message: "You have not made a backup in a while. Without one, losing or resetting your phone loses your passwords.",
+    backUp: "Back up",
+    later: "Later",
+  },
+  browserImport: {
+    title: "Import from a browser",
+    note: "Export your passwords from Chrome or Firefox as a CSV file, then choose it here. Each login becomes its own password in a new folder, linked to its website for autofill.",
+    chooseFile: "Choose CSV file",
+    notAnExport: "This is not a Chrome or Firefox password export.",
+    nothingNew: "Everything in this file is already here.",
+    summary: (browser: "chrome" | "firefox", count: number, alreadyHere: number, unusable: number) =>
+      [
+        `${count} new ${count === 1 ? "login" : "logins"} from ${browser === "chrome" ? "Chrome" : "Firefox"}.`,
+        alreadyHere > 0 ? `${alreadyHere} already here.` : "",
+        unusable > 0 ? `${unusable} cannot be imported (no password, or too long).` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+    deleteFile: "The CSV file holds every password in plain text. Delete it from your phone after importing.",
+    import: "Import",
+    folderName: (browser: "chrome" | "firefox") =>
+      `Imported from ${browser === "chrome" ? "Chrome" : "Firefox"}`,
+    imported: (count: number) => (count === 1 ? "1 login imported" : `${count} logins imported`),
   },
   backup: {
     title: "Backup and restore",

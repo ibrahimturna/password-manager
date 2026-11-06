@@ -24,7 +24,7 @@ import {
 // Changing the master password only re-locks a copy; the database is not re-encrypted.
 const WRAPPED_KEY_NAME = "vault-wrapped-key";
 const DEVICE_KEY_NAME = "vault-device-key";
-// Before Milestone 7 the vault key was stored here without a password.
+// Early versions stored the vault key here without a password.
 const OLD_KEY_NAME = "vault-database-key";
 
 const VAULT_KEY_BYTES = 32;
