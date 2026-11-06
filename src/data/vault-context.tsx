@@ -71,12 +71,15 @@ type VaultContextValue = {
   credentials: Credential[];
   createFolder: (name: string, parentId: string | null) => CreateFolderResult;
   renameFolder: (id: string, name: string) => RenameFolderResult;
+  moveFolder: (parentId: string | null, from: number, to: number) => void;
   deleteFolder: (id: string) => FolderDeletion;
   restoreDeletion: (deletion: FolderDeletion) => void;
   createCredential: (input: CredentialInput) => SaveCredentialResult;
   updateCredential: (id: string, input: CredentialInput) => SaveCredentialResult;
   deleteCredential: (id: string) => CredentialDeletion;
   restoreCredentials: (deletion: CredentialDeletion) => void;
+  // Returns what Undo should run.
+  deleteCredentials: (ids: string[]) => () => void;
   mergeCredentials: (
     keptId: string,
     input: CredentialInput,
@@ -85,7 +88,6 @@ type VaultContextValue = {
   autofillLinks: AutofillLink[];
   addAutofillLink: (target: string, credentialId: string) => void;
   removeAutofillLink: (target: string, credentialId: string) => void;
-  lock: () => void;
   masterPassword: string;
   changeMasterPassword: (password: string) => Promise<void>;
   deviceLockAvailable: boolean;
@@ -245,7 +247,6 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     return (
       <LoadedVaultProvider
         session={session}
-        lock={lock}
         deviceLockAvailable={deviceLockAvailable}
         deviceLockOn={deviceLockOn}
         onDeviceLockChange={setDeviceLockOnState}
@@ -284,7 +285,6 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
 type LoadedVaultProviderProps = {
   session: Session;
-  lock: () => void;
   deviceLockAvailable: boolean;
   deviceLockOn: boolean;
   onDeviceLockChange: (on: boolean) => void;
@@ -295,7 +295,6 @@ type LoadedVaultProviderProps = {
 // Owns the vault data for the whole app and shares it with every screen below it.
 function LoadedVaultProvider({
   session,
-  lock,
   deviceLockAvailable,
   deviceLockOn,
   onDeviceLockChange,
@@ -369,6 +368,11 @@ function LoadedVaultProvider({
     return result;
   }
 
+  function moveFolder(parentId: string | null, from: number, to: number) {
+    repository.moveFolder(parentId, from, to);
+    setFolders(repository.getFolders());
+  }
+
   // Deleting and restoring change credentials too, so both copies are refreshed.
   function deleteFolder(id: string): FolderDeletion {
     const deletion = repository.deleteFolder(id);
@@ -405,6 +409,17 @@ function LoadedVaultProvider({
   function restoreCredentials(deletion: CredentialDeletion) {
     repository.restoreCredentials(deletion);
     setCredentials(repository.getCredentials());
+  }
+
+  function deleteCredentials(ids: string[]) {
+    const deletions = ids.map((id) => repository.deleteCredential(id));
+    setCredentials(repository.getCredentials());
+
+    return () => {
+      // Backwards, so each password returns to the place it left.
+      for (const deletion of [...deletions].reverse()) repository.restoreCredentials(deletion);
+      setCredentials(repository.getCredentials());
+    };
   }
 
   // Only re-locks the vault key's password copy; the database is not re-encrypted.
@@ -456,11 +471,12 @@ function LoadedVaultProvider({
         updateCredential,
         deleteCredential,
         restoreCredentials,
+        deleteCredentials,
+        moveFolder,
         mergeCredentials,
         autofillLinks,
         addAutofillLink,
         removeAutofillLink,
-        lock,
         masterPassword,
         changeMasterPassword,
         deviceLockAvailable,

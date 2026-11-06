@@ -256,12 +256,11 @@ export default function CredentialFormScreen() {
           onPress={() =>
             router.push({ pathname: "/autofill-links", params: { credentialId: existing.id } })
           }
-          style={styles.linksRow}
+          style={[styles.button, styles.saveButton, styles.linksButton]}
           accessibilityRole="button"
         >
-          <Text style={styles.selection}>{t.autofillLinks.title}</Text>
-          <Text style={styles.linksCount}>
-            {getLinkedTargets(autofillLinks, existing.id).length}
+          <Text style={styles.saveText}>
+            {`${t.autofillLinks.title} (${getLinkedTargets(autofillLinks, existing.id).length})`}
           </Text>
         </Pressable>
       )}
@@ -387,18 +386,9 @@ function createStyles(colors: Palette) {
       fontSize: 16,
       color: colors.onSurface,
     },
-    linksRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
+    linksButton: {
+      alignItems: "center",
       marginTop: 16,
-      paddingVertical: 12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.outlineVariant,
-    },
-    linksCount: {
-      fontSize: 16,
-      color: colors.primary,
     },
     input: {
       ...field,

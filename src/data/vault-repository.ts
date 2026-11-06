@@ -2,6 +2,7 @@ import {
   addFolder,
   type FolderDeletion,
   deleteFolder,
+  moveFolder,
   renameFolder,
   restoreDeletion,
 } from "@/features/folders/folder-mutations";
@@ -43,6 +44,8 @@ export type VaultRepository = {
   // On success, returns the new folder so the caller knows its id.
   createFolder(name: string, parentId: string | null): CreateFolderResult;
   renameFolder(id: string, name: string): RenameFolderResult;
+  // Changes a folder's place among the folders that share its parent.
+  moveFolder(parentId: string | null, from: number, to: number): void;
   // Deletes the folder, everything below it and their credentials.
   // Returns what was removed, so the delete can be undone with restoreDeletion.
   deleteFolder(id: string): FolderDeletion;
@@ -122,6 +125,10 @@ export function createInMemoryVaultRepository(
 
       folders = renameFolder(folders, id, validation.name);
       return { ok: true };
+    },
+
+    moveFolder(parentId, from, to) {
+      folders = moveFolder(folders, parentId, from, to);
     },
 
     deleteFolder(id) {

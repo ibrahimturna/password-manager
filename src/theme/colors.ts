@@ -20,6 +20,10 @@ export type Palette = {
   onError: string; // text on an error-coloured button (e.g. Delete)
   disabledContent: string; // text of something that cannot be used right now
   disabledContainer: string; // background of a disabled button
+  switchOnTrack: string;
+  switchOnThumb: string;
+  switchOffTrack: string;
+  switchOffOutline: string; // also the thumb of a switch that is off
 };
 
 export const lightColors: Palette = {
@@ -41,6 +45,10 @@ export const lightColors: Palette = {
   // onSurface at 38% and 12% opacity, as Material 3 recommends for disabled states.
   disabledContent: "rgba(26, 27, 32, 0.38)",
   disabledContainer: "rgba(26, 27, 32, 0.12)",
+  switchOnTrack: "#435E91",
+  switchOnThumb: "#FFFFFF",
+  switchOffTrack: "#E2E2E9",
+  switchOffOutline: "#74777F",
 };
 
 export const darkColors: Palette = {
@@ -61,4 +69,8 @@ export const darkColors: Palette = {
   onError: "#690005",
   disabledContent: "rgba(226, 226, 233, 0.38)",
   disabledContainer: "rgba(226, 226, 233, 0.12)",
+  switchOnTrack: "#BEC8D7",
+  switchOnThumb: "#28303C",
+  switchOffTrack: "#333538",
+  switchOffOutline: "#8E9099",
 };

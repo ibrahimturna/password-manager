@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+
+import { AppSwitch } from "@/components/app-switch";
 
 import { PasswordInput } from "@/components/password-input";
 import { useTranslation } from "@/i18n/use-translation";
@@ -70,7 +72,7 @@ export function SetupScreen({ canUseDeviceLock, onSetUp }: SetupScreenProps) {
       {canUseDeviceLock && (
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>{t.lock.useDeviceLock}</Text>
-          <Switch
+          <AppSwitch
             value={useDeviceLock}
             onValueChange={setUseDeviceLock}
             accessibilityLabel={t.lock.useDeviceLock}

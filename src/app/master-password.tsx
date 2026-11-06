@@ -1,30 +1,29 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { PasswordInput } from "@/components/password-input";
 import { useVault } from "@/data/vault-context";
+import { MASTER_PASSWORD_PASS } from "@/features/lock/kept-state";
 import { checkNewPassword, type NewPasswordError } from "@/features/lock/lock-rules";
 import { useKeptRoute, useKeptState } from "@/features/lock/use-kept-state";
 import { useTranslation } from "@/i18n/use-translation";
 import type { Palette } from "@/theme/colors";
 import { useTheme } from "@/theme/use-theme";
 
-// Changes the master password. Confirmed with the phone's lock when it is on,
-// otherwise with the current password.
+// Shows and changes the master password. Settings confirms it is the user before opening this.
 export default function MasterPasswordScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { masterPassword, changeMasterPassword, deviceLockOn, verifyUser } = useVault();
+  const { masterPassword, changeMasterPassword } = useVault();
 
   useKeptRoute("/master-password");
 
+  const [hasPass] = useKeptState(MASTER_PASSWORD_PASS, false);
   // What the user typed comes back after a lock.
-  const [current, setCurrent] = useKeptState("master-password.current", "");
   const [password, setPassword] = useKeptState("master-password.password", "");
   const [repeat, setRepeat] = useKeptState("master-password.repeat", "");
-  const [isCurrentWrong, setIsCurrentWrong] = useState(false);
   const [error, setError] = useState<NewPasswordError | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
@@ -33,36 +32,24 @@ export default function MasterPasswordScreen() {
     setError(problem);
     if (problem !== null) return;
 
-    if (deviceLockOn) {
-      if (!(await verifyUser(t.masterPasswordForm.verifyPrompt))) return;
-    } else if (current !== masterPassword) {
-      setIsCurrentWrong(true);
-      return;
-    }
-
     setIsBusy(true);
     await changeMasterPassword(password);
     router.back();
   }
 
+  if (!hasPass) return <Redirect href="/" />;
+
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {!deviceLockOn && (
-        <>
-          <Text style={styles.label}>{t.masterPasswordForm.current}</Text>
-          <PasswordInput
-            value={current}
-            onChangeText={(text) => {
-              setCurrent(text);
-              setIsCurrentWrong(false);
-            }}
-            label={t.masterPasswordForm.current}
-            showLabel={t.lock.showPassword}
-            hideLabel={t.lock.hidePassword}
-          />
-          {isCurrentWrong && <Text style={styles.error}>{t.masterPasswordForm.wrongCurrent}</Text>}
-        </>
-      )}
+      <Text style={styles.label}>{t.settings.masterPassword}</Text>
+      <PasswordInput
+        value={masterPassword}
+        onChangeText={() => undefined}
+        editable={false}
+        label={t.settings.masterPassword}
+        showLabel={t.lock.showPassword}
+        hideLabel={t.lock.hidePassword}
+      />
 
       <Text style={styles.label}>{t.masterPasswordForm.new}</Text>
       <PasswordInput

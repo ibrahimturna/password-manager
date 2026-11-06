@@ -2,7 +2,7 @@
   "expo": {
     "name": "password-manager",
     "slug": "password-manager",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "passwordmanager",
@@ -70,7 +70,8 @@
       "policy": "fingerprint"
     },
     "updates": {
-      "url": "https://u.expo.dev/77ccde06-62e1-48ce-bb25-2e92b0bb86c0"
+      "url": "https://u.expo.dev/77ccde06-62e1-48ce-bb25-2e92b0bb86c0",
+      "checkAutomatically": "NEVER"
     }
   }
 }

@@ -1,17 +1,26 @@
+import Constants from "expo-constants";
 import { router } from "expo-router";
-import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { AppState, Platform, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { openAutofillProviderSettings } from "../../modules/password-autofill";
+import { isAutofillProvider, openAutofillProviderSettings } from "../../modules/password-autofill";
 
-import { PasswordInput } from "@/components/password-input";
-import { SegmentedControl } from "@/components/segmented-control";
+import { AppSwitch } from "@/components/app-switch";
+import { ChoiceDialog } from "@/components/choice-dialog";
+import { SettingsDivider, SettingsRow } from "@/components/settings-row";
 import { useVault } from "@/data/vault-context";
+import { keptState, MASTER_PASSWORD_PASS } from "@/features/lock/kept-state";
 import { useKeptRoute } from "@/features/lock/use-kept-state";
+import { VerifyPasswordDialog } from "@/features/lock/verify-password-dialog";
+import { canUpdate, isUpdateAvailable, UpdateDialog } from "@/features/settings/app-update";
 import { useSettings } from "@/features/settings/settings-context";
 import { useTranslation } from "@/i18n/use-translation";
-import type { Palette } from "@/theme/colors";
-import { useTheme } from "@/theme/use-theme";
+
+type OpenChoice = "language" | "theme" | "autoLock" | null;
+
+// Older versions can only hide the app by also blocking screenshots.
+const canChooseRecents = Platform.OS === "android" && Number(Platform.Version) >= 33;
 
 export default function SettingsScreen() {
   const {
@@ -19,29 +28,93 @@ export default function SettingsScreen() {
     theme,
     autoLock,
     screenCapture,
+    recents,
     setLanguage,
     setTheme,
     setAutoLock,
     setScreenCapture,
+    setRecents,
   } = useSettings();
-  const { lock, masterPassword, deviceLockAvailable, deviceLockOn, setDeviceLockOn, verifyUser } =
-    useVault();
+  const { deviceLockAvailable, deviceLockOn, setDeviceLockOn, verifyUser } = useVault();
   const t = useTranslation();
-  const styles = createStyles(useTheme().colors);
   useKeptRoute("/settings");
+  const insets = useSafeAreaInsets();
+  const [updateCheck, setUpdateCheck] = useState<"idle" | "checking" | "upToDate" | "failed">(
+    "idle",
+  );
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isAutofillOn, setIsAutofillOn] = useState(isAutofillProvider);
   const [isAutofillMissing, setIsAutofillMissing] = useState(false);
+  const [isAskingPassword, setIsAskingPassword] = useState(false);
+  const [openChoice, setOpenChoice] = useState<OpenChoice>(null);
 
-  // Turning the phone lock on first checks that it really works.
-  async function changeDeviceLock(on: boolean) {
-    if (on && !(await verifyUser(t.lock.devicePrompt))) return;
-    await setDeviceLockOn(on);
+  // Language names are always written in their own language, so they are not translated.
+  const languages = [
+    { value: "device" as const, label: t.settings.device },
+    { value: "tr" as const, label: "Türkçe" },
+    { value: "en" as const, label: "English" },
+  ];
+  const themes = [
+    { value: "device" as const, label: t.settings.device },
+    { value: "light" as const, label: t.settings.light },
+    { value: "dark" as const, label: t.settings.dark },
+  ];
+  const autoLocks = [
+    { value: "immediately" as const, label: t.settings.immediately },
+    { value: "1min" as const, label: t.settings.oneMinute },
+    { value: "5min" as const, label: t.settings.fiveMinutes },
+  ];
+
+  function getLabel<T extends string>(options: { value: T; label: string }[], value: T) {
+    return options.find((option) => option.value === value)?.label;
   }
 
-  // Being here means the vault is unlocked. Allowing screenshots also asks for the phone's
-  // lock when it is in use, so someone picking up an open phone cannot do it silently.
-  async function changeScreenCapture(allowed: boolean) {
-    if (allowed && deviceLockOn && !(await verifyUser(t.lock.devicePrompt))) return;
-    setScreenCapture(allowed ? "allowed" : "blocked");
+  function openMasterPassword() {
+    setIsAskingPassword(false);
+    keptState.write(MASTER_PASSWORD_PASS, true);
+    router.push("/master-password");
+  }
+
+  // The master password is the one setting that asks again, before its screen opens.
+  async function askForMasterPassword() {
+    if (!deviceLockOn) {
+      setIsAskingPassword(true);
+    } else if (await verifyUser(t.masterPasswordForm.verifyPrompt)) {
+      openMasterPassword();
+    }
+  }
+
+  // The user changes this in Android's settings, so it is checked again on coming back.
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") setIsAutofillOn(isAutofillProvider());
+    });
+    return () => subscription.remove();
+  }, []);
+
+  async function checkForUpdate() {
+    setUpdateCheck("checking");
+    try {
+      const isAvailable = await isUpdateAvailable();
+      setUpdateCheck(isAvailable ? "idle" : "upToDate");
+      setIsUpdateOpen(isAvailable);
+    } catch {
+      setUpdateCheck("failed");
+    }
+  }
+
+  function getVersionNote(): string {
+    if (!canUpdate) return t.update.devOnly;
+    switch (updateCheck) {
+      case "idle":
+        return t.update.tapToCheck;
+      case "checking":
+        return t.update.checking;
+      case "upToDate":
+        return t.update.upToDate;
+      case "failed":
+        return t.update.checkFailed;
+    }
   }
 
   function turnOnAutofill() {
@@ -49,144 +122,147 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t.settings.language}</Text>
-        <SegmentedControl
-          options={[
-            { value: "device", label: t.settings.device },
-            // Language names are always written in their own language, so they are not translated.
-            { value: "tr", label: "Türkçe" },
-            { value: "en", label: "English" },
-          ]}
-          value={language}
-          onChange={setLanguage}
-        />
-      </View>
+    // The app draws behind Android's navigation bar, so the last row needs room above it.
+    <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
+      <SettingsRow
+        icon="language"
+        title={t.settings.language}
+        subtitle={getLabel(languages, language)}
+        onPress={() => setOpenChoice("language")}
+      />
+      <SettingsRow
+        icon="theme"
+        title={t.settings.theme}
+        subtitle={getLabel(themes, theme)}
+        onPress={() => setOpenChoice("theme")}
+      />
+      <SettingsDivider />
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t.settings.theme}</Text>
-        <SegmentedControl
-          options={[
-            { value: "device", label: t.settings.device },
-            { value: "light", label: t.settings.light },
-            { value: "dark", label: t.settings.dark },
-          ]}
-          value={theme}
-          onChange={setTheme}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t.settings.security}</Text>
-
-        <Text style={styles.label}>{t.settings.masterPassword}</Text>
-        <PasswordInput
-          value={masterPassword}
-          onChangeText={() => undefined}
-          editable={false}
-          label={t.settings.masterPassword}
-          showLabel={t.lock.showPassword}
-          hideLabel={t.lock.hidePassword}
-        />
-        <Pressable
-          onPress={() => router.push("/master-password")}
-          style={styles.textButton}
-          accessibilityRole="button"
+      <SettingsRow
+        icon="newPassword"
+        title={t.settings.masterPassword}
+        subtitle={t.settings.masterPasswordNote}
+        onPress={askForMasterPassword}
+      />
+      {deviceLockAvailable && (
+        <SettingsRow
+          icon="fingerprint"
+          title={t.settings.deviceLock}
+          subtitle={t.settings.deviceLockNote}
         >
-          <Text style={styles.textButtonLabel}>{t.settings.changeMasterPassword}</Text>
-        </Pressable>
-
-        {deviceLockAvailable && (
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>{t.settings.deviceLock}</Text>
-            <Switch
-              value={deviceLockOn}
-              onValueChange={changeDeviceLock}
-              accessibilityLabel={t.settings.deviceLock}
-            />
-          </View>
-        )}
-
-        <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>{t.settings.allowScreenshots}</Text>
-          <Switch
-            value={screenCapture === "allowed"}
-            onValueChange={changeScreenCapture}
-            accessibilityLabel={t.settings.allowScreenshots}
+          <AppSwitch
+            value={deviceLockOn}
+            onValueChange={setDeviceLockOn}
+            accessibilityLabel={t.settings.deviceLock}
           />
-        </View>
-        <Text style={styles.note}>{t.settings.allowScreenshotsNote}</Text>
-
-        <Text style={styles.label}>{t.settings.autoLock}</Text>
-        <SegmentedControl
-          options={[
-            { value: "immediately", label: t.settings.immediately },
-            { value: "1min", label: t.settings.oneMinute },
-            { value: "5min", label: t.settings.fiveMinutes },
-          ]}
-          value={autoLock}
-          onChange={setAutoLock}
+        </SettingsRow>
+      )}
+      <SettingsRow
+        icon="screenshot"
+        title={t.settings.allowScreenshots}
+        subtitle={t.settings.allowScreenshotsNote}
+      >
+        <AppSwitch
+          value={screenCapture === "allowed"}
+          onValueChange={(allowed) => setScreenCapture(allowed ? "allowed" : "blocked")}
+          accessibilityLabel={t.settings.allowScreenshots}
         />
-
-        <Pressable onPress={lock} style={styles.textButton} accessibilityRole="button">
-          <Text style={styles.textButtonLabel}>{t.settings.lockNow}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push("/backup")}
-          style={styles.textButton}
-          accessibilityRole="button"
+      </SettingsRow>
+      {canChooseRecents && (
+        <SettingsRow
+          icon="hide"
+          title={t.settings.hideInRecents}
+          subtitle={
+            screenCapture === "blocked"
+              ? t.settings.hideInRecentsForced
+              : t.settings.hideInRecentsNote
+          }
         >
-          <Text style={styles.textButtonLabel}>{t.backup.title}</Text>
-        </Pressable>
-        <Pressable onPress={turnOnAutofill} style={styles.textButton} accessibilityRole="button">
-          <Text style={styles.textButtonLabel}>{t.autofill.turnOn}</Text>
-        </Pressable>
-        {isAutofillMissing && <Text style={styles.note}>{t.autofill.turnOnFailed}</Text>}
-      </View>
+          <AppSwitch
+            // Android always hides the app while screenshots are blocked.
+            value={screenCapture === "blocked" || recents === "hidden"}
+            onValueChange={(hidden) => setRecents(hidden ? "hidden" : "shown")}
+            disabled={screenCapture === "blocked"}
+            accessibilityLabel={t.settings.hideInRecents}
+          />
+        </SettingsRow>
+      )}
+      <SettingsRow
+        icon="timer"
+        title={t.settings.autoLock}
+        subtitle={getLabel(autoLocks, autoLock)}
+        onPress={() => setOpenChoice("autoLock")}
+      />
+      <SettingsDivider />
+
+      {isAutofillOn ? (
+        <SettingsRow icon="key" title={t.autofill.onTitle} subtitle={t.autofill.onNote} />
+      ) : (
+        <SettingsRow
+          icon="key"
+          title={t.autofill.turnOn}
+          subtitle={isAutofillMissing ? t.autofill.turnOnFailed : t.autofill.turnOnNote}
+          onPress={turnOnAutofill}
+        />
+      )}
+      <SettingsRow
+        icon="backup"
+        title={t.backup.title}
+        subtitle={t.settings.backupNote}
+        onPress={() => router.push("/backup")}
+      />
+      <SettingsDivider />
+
+      <SettingsRow
+        icon="info"
+        title={t.settings.version}
+        subtitle={`${Constants.expoConfig?.version ?? ""} · ${getVersionNote()}`}
+        onPress={canUpdate && updateCheck !== "checking" ? checkForUpdate : undefined}
+      />
+      {isUpdateOpen && <UpdateDialog onClose={() => setIsUpdateOpen(false)} />}
+
+      {isAskingPassword && (
+        <VerifyPasswordDialog
+          onCancel={() => setIsAskingPassword(false)}
+          onVerified={openMasterPassword}
+        />
+      )}
+      <ChoiceDialog
+        visible={openChoice === "language"}
+        title={t.settings.language}
+        options={languages}
+        value={language}
+        cancelLabel={t.settings.cancel}
+        onChoose={(value) => {
+          setLanguage(value);
+          setOpenChoice(null);
+        }}
+        onCancel={() => setOpenChoice(null)}
+      />
+      <ChoiceDialog
+        visible={openChoice === "theme"}
+        title={t.settings.theme}
+        options={themes}
+        value={theme}
+        cancelLabel={t.settings.cancel}
+        onChoose={(value) => {
+          setTheme(value);
+          setOpenChoice(null);
+        }}
+        onCancel={() => setOpenChoice(null)}
+      />
+      <ChoiceDialog
+        visible={openChoice === "autoLock"}
+        title={t.settings.autoLock}
+        options={autoLocks}
+        value={autoLock}
+        cancelLabel={t.settings.cancel}
+        onChoose={(value) => {
+          setAutoLock(value);
+          setOpenChoice(null);
+        }}
+        onCancel={() => setOpenChoice(null)}
+      />
     </ScrollView>
   );
-}
-
-function createStyles(colors: Palette) {
-  return StyleSheet.create({
-    content: {
-      padding: 16,
-      gap: 24,
-    },
-    section: {
-      gap: 8,
-    },
-    sectionTitle: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: colors.onSurface,
-    },
-    label: {
-      marginTop: 8,
-      color: colors.onSurfaceVariant,
-    },
-    note: {
-      color: colors.onSurfaceVariant,
-    },
-    textButton: {
-      alignSelf: "flex-start",
-      paddingVertical: 8,
-    },
-    textButtonLabel: {
-      fontSize: 16,
-      color: colors.primary,
-    },
-    switchRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      marginTop: 8,
-    },
-    switchLabel: {
-      flex: 1,
-      fontSize: 15,
-      color: colors.onSurface,
-    },
-  });
 }

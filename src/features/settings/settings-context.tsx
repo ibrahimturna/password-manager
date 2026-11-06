@@ -12,21 +12,26 @@ export type LanguageSetting = (typeof LANGUAGE_SETTINGS)[number];
 export type ThemeSetting = (typeof THEME_SETTINGS)[number];
 const SCREEN_CAPTURE_SETTINGS = ["blocked", "allowed"] as const;
 export type ScreenCaptureSetting = (typeof SCREEN_CAPTURE_SETTINGS)[number];
+const RECENTS_SETTINGS = ["hidden", "shown"] as const;
+export type RecentsSetting = (typeof RECENTS_SETTINGS)[number];
 
 const LANGUAGE_KEY = "settings.language";
 const THEME_KEY = "settings.theme";
 const AUTO_LOCK_KEY = "settings.autoLock";
 const SCREEN_CAPTURE_KEY = "settings.screenCapture";
+const RECENTS_KEY = "settings.recents";
 
 type SettingsValue = {
   language: LanguageSetting;
   theme: ThemeSetting;
   autoLock: AutoLockSetting;
   screenCapture: ScreenCaptureSetting;
+  recents: RecentsSetting;
   setLanguage: (language: LanguageSetting) => void;
   setTheme: (theme: ThemeSetting) => void;
   setAutoLock: (autoLock: AutoLockSetting) => void;
   setScreenCapture: (screenCapture: ScreenCaptureSetting) => void;
+  setRecents: (recents: RecentsSetting) => void;
 };
 
 const SettingsContext = createContext<SettingsValue | null>(null);
@@ -45,6 +50,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [screenCapture, setScreenCaptureState] = useState(() =>
     parseSetting(Storage.getItemSync(SCREEN_CAPTURE_KEY), SCREEN_CAPTURE_SETTINGS, "blocked"),
+  );
+  const [recents, setRecentsState] = useState(() =>
+    parseSetting(Storage.getItemSync(RECENTS_KEY), RECENTS_SETTINGS, "hidden"),
   );
 
   function setLanguage(next: LanguageSetting) {
@@ -67,6 +75,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     Storage.setItemSync(SCREEN_CAPTURE_KEY, next);
   }
 
+  function setRecents(next: RecentsSetting) {
+    setRecentsState(next);
+    Storage.setItemSync(RECENTS_KEY, next);
+  }
+
   return (
     <SettingsContext
       value={{
@@ -74,10 +87,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         theme,
         autoLock,
         screenCapture,
+        recents,
         setLanguage,
         setTheme,
         setAutoLock,
         setScreenCapture,
+        setRecents,
       }}
     >
       {children}

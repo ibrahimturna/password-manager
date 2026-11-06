@@ -14,10 +14,12 @@ type ConfirmDialogProps = {
   onConfirm: () => void;
   // Extra content between the message and the buttons, e.g. a preview.
   children?: ReactNode;
+  // False draws the confirm button in the normal colour, for questions that remove nothing.
+  isDestructive?: boolean;
 };
 
 // A yes/no question in a Material 3 style dialog, drawn in the app's theme.
-// The confirm button is red, because this is used before deleting things.
+// The confirm button is red by default, because this is mostly used before deleting things.
 export function ConfirmDialog({
   visible,
   title,
@@ -27,6 +29,7 @@ export function ConfirmDialog({
   onCancel,
   onConfirm,
   children,
+  isDestructive = true,
 }: ConfirmDialogProps) {
   const styles = createStyles(useTheme().colors);
 
@@ -56,10 +59,12 @@ export function ConfirmDialog({
             </Pressable>
             <Pressable
               onPress={onConfirm}
-              style={[styles.button, styles.confirmButton]}
+              style={[styles.button, isDestructive ? styles.confirmButton : styles.primaryButton]}
               accessibilityRole="button"
             >
-              <Text style={styles.confirmText}>{confirmLabel}</Text>
+              <Text style={isDestructive ? styles.confirmText : styles.primaryText}>
+                {confirmLabel}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -121,6 +126,13 @@ function createStyles(colors: Palette) {
     confirmText: {
       fontSize: 16,
       color: colors.onError,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+    },
+    primaryText: {
+      fontSize: 16,
+      color: colors.onPrimary,
     },
   });
 }

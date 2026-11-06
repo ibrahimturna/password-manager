@@ -2,10 +2,13 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
+import { StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { VaultProvider } from "@/data/vault-context";
 import { ExpandedFoldersProvider } from "@/features/folders/expanded-folders-context";
 import { useRestoreRoutes } from "@/features/lock/use-kept-state";
+import { UpdatePrompt } from "@/features/settings/app-update";
 import { ScreenCaptureGuard } from "@/features/settings/screen-capture-guard";
 import { SettingsButton } from "@/features/settings/settings-button";
 import { SettingsProvider } from "@/features/settings/settings-context";
@@ -17,19 +20,27 @@ export default function RootLayout() {
   return (
     // Every screen inside the providers shares the same settings, vault data, open/closed
     // tree state and pending Undo.
-    <SettingsProvider>
-      <ScreenCaptureGuard>
-        <ExpandedFoldersProvider>
-          <VaultProvider>
-            <UndoProvider>
-              <AppStack />
-            </UndoProvider>
-          </VaultProvider>
-        </ExpandedFoldersProvider>
-      </ScreenCaptureGuard>
-    </SettingsProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SettingsProvider>
+        <ScreenCaptureGuard>
+          <ExpandedFoldersProvider>
+            <VaultProvider>
+              <UndoProvider>
+                <AppStack />
+              </UndoProvider>
+            </VaultProvider>
+          </ExpandedFoldersProvider>
+        </ScreenCaptureGuard>
+      </SettingsProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});
 
 // A separate component because the header titles and colours need the current settings,
 // and those hooks only work inside <SettingsProvider>.
@@ -93,6 +104,7 @@ function AppStack() {
         <Stack.Screen name="settings" options={{ title: t.settings.title }} />
         <Stack.Screen name="backup" options={{ title: t.backup.title }} />
       </Stack>
+      <UpdatePrompt />
     </ThemeProvider>
   );
 }

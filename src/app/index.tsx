@@ -2,6 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
+  BackHandler,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -12,15 +13,18 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Icon, type IconName } from "@/components/icon";
 import { Snackbar } from "@/components/snackbar";
 import { useVault } from "@/data/vault-context";
 import {
+  getChildFolders,
   getFolderById,
   getSubtreeRows,
   toggleExpanded,
   type TreeRow,
 } from "@/features/folders/folder-tree";
+import { FolderReorderList } from "@/features/folders/folder-reorder-list";
 import { FolderTreeList } from "@/features/folders/folder-tree-list";
 import { DeleteFolderDialog } from "@/features/folders/delete-folder-dialog";
 import { useExpandedFolders } from "@/features/folders/expanded-folders-context";
@@ -42,7 +46,7 @@ export default function HomeScreen() {
   const t = useTranslation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { folders, credentials, deleteFolder, restoreDeletion } = useVault();
+  const { folders, credentials, deleteFolder, restoreDeletion, deleteCredentials } = useVault();
   const { expandedIds, toggleFolder, collapseAll, forgetFolders } = useExpandedFolders();
   // Keeps the round button above Android's navigation bar.
   const insets = useSafeAreaInsets();
@@ -63,15 +67,57 @@ export default function HomeScreen() {
 
   const { pendingUndo, offerUndo, runUndo, dismissUndo } = useUndo();
 
-  // The passwords chosen for merging, or null when not selecting.
+  // The passwords chosen to merge or delete, or null when not selecting.
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string> | null>(null);
+  // Kept after the dialog closes, so its text does not change while it fades out.
+  const [deleteCount, setDeleteCount] = useState(0);
+  const [isDeleteSelectedOpen, setIsDeleteSelectedOpen] = useState(false);
+  // The level whose folders are being reordered, or null when not reordering.
+  const [reorder, setReorder] = useState<{ parentId: string | null } | null>(null);
 
+  // Android's back button leaves these modes instead of the app.
+  const isInMode = selectedIds !== null || reorder !== null;
+  useEffect(() => {
+    if (!isInMode) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      setSelectedIds(null);
+      setReorder(null);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isInMode]);
+
+  // Unselecting the last password ends selecting.
   function toggleSelected(credentialId: string) {
     setSelectedIds((current) => {
       const next = new Set(current);
       if (!next.delete(credentialId)) next.add(credentialId);
-      return next;
+      return next.size === 0 ? null : next;
     });
+  }
+
+  function openDeleteSelected() {
+    if (selectedIds === null) return;
+    setDeleteCount(selectedIds.size);
+    setIsDeleteSelectedOpen(true);
+  }
+
+  function confirmDeleteSelected() {
+    setIsDeleteSelectedOpen(false);
+    if (selectedIds === null) return;
+    const undo = deleteCredentials([...selectedIds]);
+    offerUndo(t.merge.deleted(selectedIds.size), undo);
+    setSelectedIds(null);
+  }
+
+  // A folder with no others beside it has nothing to reorder. While searching the list is
+  // incomplete, so reordering waits until the search is cleared.
+  function startReorder(folderId: string) {
+    const folder = getFolderById(folders, folderId);
+    if (folder === undefined || isSearching || selectedIds !== null) return;
+    if (getChildFolders(folders, folder.parentId).length < 2) return;
+    closeMenu();
+    setReorder({ parentId: folder.parentId });
   }
 
   function openMerge() {
@@ -94,6 +140,7 @@ export default function HomeScreen() {
 
   const shownExpandedIds = isSearching ? searchExpandedIds : expandedIds;
   const hasExpanded = shownExpandedIds.size > 0;
+  const canReorder = !isSearching && getChildFolders(folders, null).length >= 2;
 
   function changeQuery(text: string) {
     closeMenu();
@@ -191,6 +238,7 @@ export default function HomeScreen() {
         setMenuFolderId(null);
         setIsAddMenuOpen(false);
         setSelectedIds(null);
+        setReorder(null);
         dismissUndo();
       };
     }, [dismissUndo]),
@@ -207,7 +255,7 @@ export default function HomeScreen() {
       }}
       accessible={false}
     >
-      <View style={styles.searchField}>
+      <View style={[styles.searchField, reorder !== null && styles.hidden]}>
         <Icon name="search" color={colors.onSurfaceVariant} size={22} />
         <TextInput
           ref={searchInputRef}
@@ -236,61 +284,95 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <View style={styles.listActions}>
-        <Pressable
-          onPress={() => {
-            closeMenu();
-            setSelectedIds((current) => (current === null ? new Set() : null));
-          }}
-          style={styles.collapseButton}
-          accessibilityRole="button"
-        >
-          <Text style={styles.collapseText}>
-            {selectedIds === null ? t.merge.select : t.merge.cancel}
+      {reorder !== null ? (
+        <>
+          <Text style={styles.reorderHint}>
+            {reorder.parentId === null
+              ? t.tree.reorderHint
+              : t.tree.reorderHintIn(getFolderById(folders, reorder.parentId)?.name ?? "")}
           </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            closeMenu();
-            collapseShownFolders();
-          }}
-          disabled={!hasExpanded}
-          style={styles.collapseButton}
-          accessibilityRole="button"
-        >
-          <Icon
-            name="collapseAll"
-            color={hasExpanded ? colors.primary : colors.disabledContent}
-            size={20}
-          />
-          <Text style={[styles.collapseText, !hasExpanded && styles.disabledText]}>
-            {t.home.collapseAll}
-          </Text>
-        </Pressable>
-      </View>
+          <FolderReorderList parentId={reorder.parentId} />
+        </>
+      ) : (
+        <>
+          <View style={styles.listActions}>
+            {selectedIds !== null ? (
+              <Pressable
+                onPress={() => setSelectedIds(null)}
+                style={styles.collapseButton}
+                accessibilityRole="button"
+              >
+                <Text style={styles.collapseText}>{t.merge.cancel}</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => {
+                  closeMenu();
+                  setReorder({ parentId: null });
+                }}
+                disabled={!canReorder}
+                style={styles.collapseButton}
+                accessibilityRole="button"
+              >
+                <Icon
+                  name="reorder"
+                  color={canReorder ? colors.primary : colors.disabledContent}
+                  size={20}
+                />
+                <Text style={[styles.collapseText, !canReorder && styles.disabledText]}>
+                  {t.home.reorder}
+                </Text>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => {
+                closeMenu();
+                collapseShownFolders();
+              }}
+              disabled={!hasExpanded}
+              style={styles.collapseButton}
+              accessibilityRole="button"
+            >
+              <Icon
+                name="collapseAll"
+                color={hasExpanded ? colors.primary : colors.disabledContent}
+                size={20}
+              />
+              <Text style={[styles.collapseText, !hasExpanded && styles.disabledText]}>
+                {t.home.collapseAll}
+              </Text>
+            </Pressable>
+          </View>
 
-      <FolderTreeList
-        expandedIds={shownExpandedIds}
-        filter={search ?? undefined}
-        emptyText={isSearching ? t.tree.noResults(query.trim()) : t.tree.noFolders}
-        menuFolderId={menuFolderId}
-        copiedCredentialId={copiedCredentialId}
-        selectedIds={selectedIds ?? undefined}
-        onToggleSelected={toggleSelected}
-        onToggleFolder={toggleShownFolder}
-        onToggleMenu={toggleMenu}
-        onCloseMenu={closeMenu}
-        onAddPassword={(folderId) => openCredentialForm({ folderId })}
-        onAddSubfolder={(parentId) =>
-          router.push({ pathname: "/folder-form", params: { mode: "create", folderId: parentId } })
-        }
-        onRenameFolder={(folderId) =>
-          router.push({ pathname: "/folder-form", params: { mode: "rename", folderId } })
-        }
-        onDeleteFolder={openDeleteDialog}
-        onOpenCredential={(credentialId) => openCredentialForm({ credentialId })}
-        onCopyCredential={copyCredentialPassword}
-      />
+          <FolderTreeList
+            expandedIds={shownExpandedIds}
+            filter={search ?? undefined}
+            emptyText={isSearching ? t.tree.noResults(query.trim()) : t.tree.noFolders}
+            menuFolderId={menuFolderId}
+            copiedCredentialId={copiedCredentialId}
+            selectedIds={selectedIds ?? undefined}
+            onToggleSelected={toggleSelected}
+            onStartSelecting={(credentialId) => setSelectedIds(new Set([credentialId]))}
+            onStartReorder={startReorder}
+            onToggleFolder={toggleShownFolder}
+            onToggleMenu={toggleMenu}
+            onCloseMenu={closeMenu}
+            onAddPassword={(folderId) => openCredentialForm({ folderId })}
+            onAddSubfolder={(parentId) =>
+              router.push({
+                pathname: "/folder-form",
+                params: { mode: "create", folderId: parentId },
+              })
+            }
+            onRenameFolder={(folderId) =>
+              router.push({ pathname: "/folder-form", params: { mode: "rename", folderId } })
+            }
+            onDeleteFolder={openDeleteDialog}
+            onOpenCredential={(credentialId) => openCredentialForm({ credentialId })}
+            onCopyCredential={copyCredentialPassword}
+          />
+        </>
+      )}
 
       {pendingUndo !== null && (
         <Snackbar
@@ -304,24 +386,45 @@ export default function HomeScreen() {
       )}
 
       {selectedIds !== null && (
-        <Pressable
-          onPress={openMerge}
-          disabled={selectedIds.size < 2}
-          style={[
-            styles.mergeButton,
-            { bottom: insets.bottom + 16 },
-            selectedIds.size < 2 && styles.mergeButtonDisabled,
-          ]}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.mergeText, selectedIds.size < 2 && styles.disabledText]}>
-            {t.merge.mergeCount(selectedIds.size)}
-          </Text>
-        </Pressable>
+        <View style={[styles.bottomBar, { bottom: insets.bottom + 16 }]}>
+          <Pressable
+            onPress={openDeleteSelected}
+            style={[styles.barButton, styles.deleteButton]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.deleteText}>{t.merge.deleteCount(selectedIds.size)}</Text>
+          </Pressable>
+          <Pressable
+            onPress={openMerge}
+            disabled={selectedIds.size < 2}
+            style={[
+              styles.barButton,
+              styles.mainBarButton,
+              selectedIds.size < 2 && styles.barButtonDisabled,
+            ]}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.mainBarText, selectedIds.size < 2 && styles.disabledText]}>
+              {t.merge.mergeCount(selectedIds.size)}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {reorder !== null && (
+        <View style={[styles.bottomBar, { bottom: insets.bottom + 16 }]}>
+          <Pressable
+            onPress={() => setReorder(null)}
+            style={[styles.barButton, styles.mainBarButton]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.mainBarText}>{t.tree.reorderDone}</Text>
+          </Pressable>
+        </View>
       )}
 
       {/* The small search button above "+". Hidden while the "+" menu uses that space. */}
-      {!isAddMenuOpen && selectedIds === null && (
+      {!isAddMenuOpen && !isInMode && (
         <Pressable
           onPress={focusSearch}
           style={[
@@ -359,7 +462,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {selectedIds === null && (
+      {!isInMode && (
         <Pressable
           onPress={() => {
             setMenuFolderId(null);
@@ -383,6 +486,15 @@ export default function HomeScreen() {
         rows={deleteTarget?.rows ?? []}
         onCancel={() => setIsDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
+      />
+      <ConfirmDialog
+        visible={isDeleteSelectedOpen}
+        title={t.merge.deleteTitle}
+        message={t.merge.deleteMessage(deleteCount)}
+        cancelLabel={t.deleteCredential.cancel}
+        confirmLabel={t.deleteCredential.confirm}
+        onCancel={() => setIsDeleteSelectedOpen(false)}
+        onConfirm={confirmDeleteSelected}
       />
     </Pressable>
   );
@@ -423,26 +535,46 @@ function createStyles(colors: Palette) {
       justifyContent: "center",
       elevation: 3, // Android shadow
     },
+    hidden: {
+      display: "none",
+    },
     listActions: {
       flexDirection: "row",
       justifyContent: "space-between",
     },
-    mergeButton: {
+    reorderHint: {
+      color: colors.onSurfaceVariant,
+    },
+    bottomBar: {
       position: "absolute",
       left: 16,
       right: 16,
+      flexDirection: "row",
+      gap: 12,
+    },
+    barButton: {
+      flex: 1,
       alignItems: "center",
       paddingVertical: 14,
       borderRadius: 28,
-      backgroundColor: colors.primary,
       elevation: 3, // Android shadow
     },
-    mergeButtonDisabled: {
+    mainBarButton: {
+      backgroundColor: colors.primary,
+    },
+    barButtonDisabled: {
       backgroundColor: colors.disabledContainer,
     },
-    mergeText: {
+    mainBarText: {
       fontSize: 16,
       color: colors.onPrimary,
+    },
+    deleteButton: {
+      backgroundColor: colors.error,
+    },
+    deleteText: {
+      fontSize: 16,
+      color: colors.onError,
     },
     collapseButton: {
       flexDirection: "row",

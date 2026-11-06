@@ -1,7 +1,7 @@
 import type { Credential, Folder } from "@/types/vault";
 import { reinsert, type RemovedItem } from "@/utils/removed-items";
 
-import { getDescendantIds } from "./folder-tree";
+import { getChildFolders, getDescendantIds } from "./folder-tree";
 
 // Returns a new array with a new folder added at the end.
 // The caller provides `id`, so this function always gives the same result for the same input
@@ -23,6 +23,26 @@ export function addFolder(
 export function renameFolder(folders: Folder[], id: string, name: string): Folder[] {
   return folders.map((folder) =>
     folder.id === id ? { ...folder, name } : folder,
+  );
+}
+
+// Moves a folder among the folders that share its parent. `from` and `to` count only those
+// folders. Every other folder keeps its place in the array.
+// Never changes `folders`, so React can see that the data changed.
+export function moveFolder(
+  folders: Folder[],
+  parentId: string | null,
+  from: number,
+  to: number,
+): Folder[] {
+  const siblings = getChildFolders(folders, parentId);
+  const [moved] = siblings.splice(from, 1);
+  if (moved === undefined) return folders;
+  siblings.splice(to, 0, moved);
+
+  let nextSibling = 0;
+  return folders.map((folder) =>
+    folder.parentId === parentId ? siblings[nextSibling++] : folder,
   );
 }
 

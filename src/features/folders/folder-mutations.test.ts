@@ -3,6 +3,7 @@ import type { Credential, Folder } from "@/types/vault";
 import {
   addFolder,
   deleteFolder,
+  moveFolder,
   renameFolder,
   restoreDeletion,
 } from "./folder-mutations";
@@ -12,6 +13,43 @@ const testFolders: Folder[] = [
   { id: "investments", name: "Investments", parentId: "banks" },
   { id: "social", name: "Social", parentId: null },
 ];
+
+describe("moveFolder", () => {
+  const folders: Folder[] = [
+    { id: "a", name: "A", parentId: null },
+    { id: "a1", name: "A1", parentId: "a" },
+    { id: "b", name: "B", parentId: null },
+    { id: "a2", name: "A2", parentId: "a" },
+    { id: "c", name: "C", parentId: null },
+    { id: "a3", name: "A3", parentId: "a" },
+  ];
+  const ids = (result: Folder[]) => result.map((folder) => folder.id);
+
+  it("moves a top-level folder and leaves subfolders where they are", () => {
+    expect(ids(moveFolder(folders, null, 2, 0))).toEqual(["c", "a1", "a", "a2", "b", "a3"]);
+  });
+
+  it("moves a subfolder only among its own parent's folders", () => {
+    expect(ids(moveFolder(folders, "a", 0, 2))).toEqual(["a", "a2", "b", "a3", "c", "a1"]);
+  });
+
+  it("keeps every folder's parent", () => {
+    const result = moveFolder(folders, null, 0, 2);
+
+    expect(result.find((folder) => folder.id === "a2")?.parentId).toBe("a");
+    expect(result).toHaveLength(folders.length);
+  });
+
+  it("does not change the original array", () => {
+    moveFolder(folders, null, 0, 2);
+
+    expect(ids(folders)).toEqual(["a", "a1", "b", "a2", "c", "a3"]);
+  });
+
+  it("returns the same array when there is nothing to move", () => {
+    expect(moveFolder(folders, null, 9, 0)).toBe(folders);
+  });
+});
 
 describe("addFolder", () => {
   it("adds a top-level folder at the end", () => {

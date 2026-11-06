@@ -53,3 +53,7 @@ export function createKeptState() {
 }
 
 export const keptState = createKeptState();
+
+// Set by Settings once the user has confirmed it is them. The master password screen only
+// opens with it, so a link into the app cannot reach that screen directly.
+export const MASTER_PASSWORD_PASS = "master-password.pass";

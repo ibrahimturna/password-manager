@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.view.autofill.AutofillManager
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -53,6 +54,21 @@ class PasswordAutofillModule : Module() {
         val activity = AutofillActivity.current
         activity?.runOnUiThread { activity.finish() }
       }
+    }
+
+    // Keeps the app's preview out of recent apps without blocking screenshots. Android 13 or newer.
+    Function("setHiddenInRecents") { hidden: Boolean ->
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val activity = appContext.currentActivity
+        activity?.runOnUiThread { activity.setRecentsScreenshotEnabled(!hidden) }
+      }
+    }
+
+    // Whether this app is the phone's autofill provider.
+    Function("isProvider") {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return@Function false
+      val context = appContext.reactContext ?: return@Function false
+      context.getSystemService(AutofillManager::class.java)?.hasEnabledAutofillServices() == true
     }
 
     // Opens Android's screen for choosing the autofill provider. False if the phone has none.

@@ -50,6 +50,7 @@ export function createSqliteVaultRepository(
     getCredentials: () => memory.getCredentials(),
     createFolder: (name, parentId) => saved(() => memory.createFolder(name, parentId)),
     renameFolder: (id, name) => saved(() => memory.renameFolder(id, name)),
+    moveFolder: (parentId, from, to) => saved(() => memory.moveFolder(parentId, from, to)),
     deleteFolder: (id) => saved(() => memory.deleteFolder(id)),
     restoreDeletion: (deletion) => saved(() => memory.restoreDeletion(deletion)),
     createCredential: (input) => saved(() => memory.createCredential(input)),

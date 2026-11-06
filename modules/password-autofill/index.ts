@@ -23,8 +23,10 @@ type PasswordAutofillModule = {
   setOfferTitles(titles: Record<string, string>): void;
   getWebsiteTarget(text: string): AutofillTarget | null;
   getInstalledApps(): Promise<AutofillTarget[]>;
+  setHiddenInRecents(hidden: boolean): void;
   finishFill(username: string | null, password: string): void;
   cancelFill(): void;
+  isProvider(): boolean;
   openProviderSettings(): boolean;
 };
 
@@ -52,6 +54,10 @@ export async function getInstalledApps(): Promise<AutofillTarget[]> {
   return (await native?.getInstalledApps()) ?? [];
 }
 
+export function setHiddenInRecents(hidden: boolean) {
+  native?.setHiddenInRecents(hidden);
+}
+
 export function finishAutofill(username: string | null, password: string) {
   native?.finishFill(username, password);
 }
@@ -59,6 +65,10 @@ export function finishAutofill(username: string | null, password: string) {
 // Closes the window. Used after saving too, because nothing needs to go back to the other app.
 export function cancelAutofill() {
   native?.cancelFill();
+}
+
+export function isAutofillProvider(): boolean {
+  return native?.isProvider() ?? false;
 }
 
 export function openAutofillProviderSettings(): boolean {

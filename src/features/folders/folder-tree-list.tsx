@@ -28,6 +28,8 @@ type FolderTreeListProps = {
   // While selecting: the chosen credentials. Tapping a credential then selects it.
   selectedIds?: ReadonlySet<string>;
   onToggleSelected?: (credentialId: string) => void;
+  onStartSelecting: (credentialId: string) => void;
+  onStartReorder: (folderId: string) => void;
   onToggleFolder: (folderId: string) => void;
   onToggleMenu: (folderId: string) => void;
   onCloseMenu: () => void;
@@ -40,8 +42,9 @@ type FolderTreeListProps = {
 };
 
 // Shows the whole vault as an expandable tree. Tapping a folder expands or collapses it;
-// its "⋮" button opens a small list of actions under the row. Tapping a credential opens it;
-// long-pressing it, or its copy button, copies its password.
+// long-pressing it starts reordering, and its "⋮" button opens a small list of actions under
+// the row. Tapping a credential opens it, long-pressing it starts selecting, and its copy
+// button copies its password.
 // This component does not own any state; the screen passes it in.
 export function FolderTreeList({
   expandedIds,
@@ -51,6 +54,8 @@ export function FolderTreeList({
   copiedCredentialId,
   selectedIds,
   onToggleSelected,
+  onStartSelecting,
+  onStartReorder,
   onToggleFolder,
   onToggleMenu,
   onCloseMenu,
@@ -104,6 +109,7 @@ export function FolderTreeList({
                   onCloseMenu();
                   onToggleFolder(folderId);
                 }}
+                onLongPress={() => onStartReorder(folderId)}
                 onPressMenu={() => onToggleMenu(folderId)}
                 onAddPassword={() => {
                   onCloseMenu();
@@ -141,6 +147,10 @@ export function FolderTreeList({
                       onOpenCredential(credentialId);
                     }
                   },
+                  onLongPress: () => {
+                    onCloseMenu();
+                    onStartSelecting(credentialId);
+                  },
                   onCopy: () => {
                     onCloseMenu();
                     onCopyCredential(credentialId);
@@ -176,6 +186,7 @@ type FolderRowProps = {
   isExpanded: boolean;
   isMenuOpen: boolean;
   onPress: () => void;
+  onLongPress: () => void;
   onPressMenu: () => void;
   onAddPassword: () => void;
   onAddSubfolder: () => void;
@@ -189,6 +200,7 @@ function FolderRow({
   isExpanded,
   isMenuOpen,
   onPress,
+  onLongPress,
   onPressMenu,
   onAddPassword,
   onAddSubfolder,
@@ -205,6 +217,7 @@ function FolderRow({
       <View style={styles.folderLine}>
         <Pressable
           onPress={onPress}
+          onLongPress={onLongPress}
           style={[styles.folderName, indent]}
           accessibilityRole="button"
           accessibilityState={{ expanded: isExpanded }}
@@ -324,11 +337,12 @@ type CredentialRowActions = {
   // Undefined when not selecting.
   isSelected?: boolean;
   onPress: () => void;
+  onLongPress: () => void;
   onCopy: () => void;
 };
 
 // Shows title and username only. The password is never rendered in the tree.
-// With `actions` the row can be tapped (open), long-pressed (copy) and has a copy button;
+// With `actions` the row can be tapped (open), long-pressed (select) and has a copy button;
 // without them it is read-only (used in previews).
 function CredentialRow({
   credential,
@@ -382,7 +396,7 @@ function CredentialRow({
     <View style={[styles.row, styles.folderLine]}>
       <Pressable
         onPress={actions.onPress}
-        onLongPress={actions.onCopy}
+        onLongPress={actions.onLongPress}
         style={[styles.credentialRow, styles.credentialPressable, indent]}
         accessibilityRole="button"
       >
