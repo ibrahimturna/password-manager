@@ -2,7 +2,7 @@
 
 **English** · [Türkçe](#türkçe)
 
-Local-only password manager for Android, version 1.0.2. It needs Android 7.0 or newer. iOS is not tested.
+Local-only password manager for Android, version 1.0.3. It needs Android 7.0 or newer. iOS is not tested.
 
 ## English
 
@@ -101,7 +101,7 @@ Everything else works the same on all supported versions, as long as the phone h
 
 ## Türkçe
 
-Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.2. Android 7.0 veya üzeri gerekir. iOS'ta test edilmedi.
+Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.3. Android 7.0 veya üzeri gerekir. iOS'ta test edilmedi.
 
 ### Klasörler
 
