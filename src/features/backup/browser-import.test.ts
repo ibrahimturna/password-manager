@@ -1,6 +1,12 @@
 import type { Credential } from "@/types/vault";
 
-import { getHost, parseCsv, planBrowserImport, readBrowserExport } from "./browser-import";
+import {
+  getHost,
+  getImportSource,
+  parseCsv,
+  planBrowserImport,
+  readBrowserExport,
+} from "./browser-import";
 
 // Stands in for the native website check: http(s) addresses become their host.
 const toKey = (url: string) => (url.startsWith("http") ? `web:${getHost(url)}` : null);
@@ -47,6 +53,22 @@ describe("readBrowserExport", () => {
   it("refuses other files", () => {
     expect(readBrowserExport("title,login\nGmail,me\n")).toBeNull();
     expect(readBrowserExport("")).toBeNull();
+  });
+});
+
+describe("getImportSource", () => {
+  it("names Chromium browsers from the file name", () => {
+    expect(getImportSource("chrome", "Brave Passwords.csv")).toBe("brave");
+    expect(getImportSource("chrome", "Microsoft Edge Passwords.csv")).toBe("edge");
+    expect(getImportSource("chrome", "Chrome Passwords.csv")).toBe("chrome");
+  });
+
+  it("falls back to Chrome for a renamed file", () => {
+    expect(getImportSource("chrome", "passwords.csv")).toBe("chrome");
+  });
+
+  it("keeps Firefox whatever the file is called", () => {
+    expect(getImportSource("firefox", "chrome-backup.csv")).toBe("firefox");
   });
 });
 

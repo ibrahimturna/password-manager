@@ -22,6 +22,8 @@ import {
   type RestorePlan,
   type RestoreResult,
 } from "@/features/backup/restore-plan";
+import { IMPORT_SOURCES, type ImportItem } from "@/features/backup/browser-import";
+import { getDefaultFolderRenames } from "@/features/folders/default-folder-names";
 import type { FolderDeletion } from "@/features/folders/folder-mutations";
 import type { CredentialInput } from "@/features/credentials/credential-validation";
 import { getLinksToMove } from "@/features/credentials/merge-credentials";
@@ -43,11 +45,12 @@ import {
   verifyWithDeviceLock,
 } from "@/features/lock/vault-keys";
 import { useSettings } from "@/features/settings/settings-context";
+import { en } from "@/i18n/en";
+import { tr } from "@/i18n/tr";
 import { useTranslation } from "@/i18n/use-translation";
 import { useTheme } from "@/theme/use-theme";
 import type { Credential, Folder } from "@/types/vault";
 
-import type { ImportItem } from "@/features/backup/browser-import";
 
 import { createSqliteVaultRepository } from "./sqlite-vault-repository";
 import {
@@ -306,6 +309,7 @@ function LoadedVaultProvider({
   children,
 }: LoadedVaultProviderProps) {
   const { db, repository, vaultKey } = session;
+  const t = useTranslation();
 
   // A copy of the repository's data in React state. Updating it makes the screens re-render.
   const [folders, setFolders] = useState(() => repository.getFolders());
@@ -313,6 +317,23 @@ function LoadedVaultProvider({
   const [masterPassword, setMasterPassword] = useState(() => readMasterPassword(db) ?? "");
 
   const [autofillLinks, setAutofillLinks] = useState(() => readAutofillLinks(db));
+
+  // Folders the app named itself follow the language, until the user renames them.
+  useEffect(() => {
+    const defaults = [
+      { names: [en.autofill.savedFolder, tr.autofill.savedFolder], current: t.autofill.savedFolder },
+      ...IMPORT_SOURCES.map((source) => ({
+        names: [en.browserImport.folderName(source), tr.browserImport.folderName(source)],
+        current: t.browserImport.folderName(source),
+      })),
+    ];
+    const renames = getDefaultFolderRenames(repository.getFolders(), defaults);
+    if (renames.length === 0) return;
+    // A name already taken by another folder is refused, and that folder keeps its old name.
+    for (const { id, name } of renames) repository.renameFolder(id, name);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the database changed above, so React's copy must follow.
+    setFolders(repository.getFolders());
+  }, [repository, t]);
 
   // Keeps the titles in autofill offers current, and removes deleted ones.
   useEffect(() => {

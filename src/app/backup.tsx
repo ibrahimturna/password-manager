@@ -31,8 +31,9 @@ import {
   type RestorePlan,
 } from "@/features/backup/restore-plan";
 import {
-  type Browser,
+  getImportSource,
   type ImportPlan,
+  type ImportSource,
   planBrowserImport,
   readBrowserExport,
 } from "@/features/backup/browser-import";
@@ -73,7 +74,7 @@ export default function BackupScreen() {
   const { expandWithParents } = useExpandedFolders();
   const { offerUndo } = useUndo();
   // A browser export that was read, waiting for the user to confirm.
-  const [importReview, setImportReview] = useState<{ browser: Browser; plan: ImportPlan } | null>(
+  const [importReview, setImportReview] = useState<{ source: ImportSource; plan: ImportPlan } | null>(
     null,
   );
   useKeptRoute("/backup");
@@ -200,15 +201,15 @@ export default function BackupScreen() {
         showNotice(t.browserImport.nothingNew);
         return;
       }
-      setImportReview({ browser: exported.browser, plan });
+      setImportReview({ source: getImportSource(exported.browser, file.name), plan });
     });
   }
 
   // Undo is offered on the home screen, which then shows the new folder open.
   function importNow() {
     if (importReview === null) return;
-    const { browser, plan } = importReview;
-    const { folderId, undo } = importLogins(t.browserImport.folderName(browser), plan.items);
+    const { source, plan } = importReview;
+    const { folderId, undo } = importLogins(t.browserImport.folderName(source), plan.items);
     expandWithParents(folderId);
     offerUndo(t.browserImport.imported(plan.items.length), undo);
     router.dismissTo("/");
@@ -345,7 +346,7 @@ export default function BackupScreen() {
           <>
             <Text style={styles.summary}>
               {t.browserImport.summary(
-                importReview.browser,
+                importReview.source,
                 importReview.plan.items.length,
                 importReview.plan.alreadyHere,
                 importReview.plan.unusable,

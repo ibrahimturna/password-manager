@@ -8,6 +8,17 @@ import type { Credential } from "@/types/vault";
 
 export type Browser = "chrome" | "firefox";
 
+// Chrome, Edge, Brave, Opera and Vivaldi all export the same CSV, so the file name tells them
+// apart. Each one names its file after itself unless the user renamed it.
+export const IMPORT_SOURCES = ["chrome", "edge", "brave", "opera", "vivaldi", "firefox"] as const;
+export type ImportSource = (typeof IMPORT_SOURCES)[number];
+
+export function getImportSource(format: Browser, fileName: string): ImportSource {
+  if (format === "firefox") return "firefox";
+  const name = fileName.toLowerCase();
+  return IMPORT_SOURCES.find((source) => source !== "firefox" && name.includes(source)) ?? "chrome";
+}
+
 export type BrowserLogin = { title: string; url: string; username: string; password: string };
 
 // One password to create, and the website it fills, when the address is one.

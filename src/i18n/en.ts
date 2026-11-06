@@ -1,3 +1,15 @@
+import type { ImportSource } from "@/features/backup/browser-import";
+
+// Brand names stay the same in every language.
+export const BROWSER_NAMES: Record<ImportSource, string> = {
+  chrome: "Chrome",
+  edge: "Edge",
+  brave: "Brave",
+  opera: "Opera",
+  vivaldi: "Vivaldi",
+  firefox: "Firefox",
+};
+
 // English texts. This file defines the shape every other language must follow.
 // Texts that contain a value are functions, so each language can put the value where it fits.
 export const en = {
@@ -229,13 +241,13 @@ export const en = {
   },
   browserImport: {
     title: "Import from a browser",
-    note: "Export your passwords from Chrome or Firefox as a CSV file, then choose it here. Each login becomes its own password in a new folder, linked to its website for autofill.",
+    note: "Export your passwords as a CSV file from Chrome, Firefox, or another Chromium browser such as Edge or Brave, then choose it here. Each login becomes its own password in a new folder, linked to its website for autofill.",
     chooseFile: "Choose CSV file",
     notAnExport: "This is not a Chrome or Firefox password export.",
     nothingNew: "Everything in this file is already here.",
-    summary: (browser: "chrome" | "firefox", count: number, alreadyHere: number, unusable: number) =>
+    summary: (source: ImportSource, count: number, alreadyHere: number, unusable: number) =>
       [
-        `${count} new ${count === 1 ? "login" : "logins"} from ${browser === "chrome" ? "Chrome" : "Firefox"}.`,
+        `${count} new ${count === 1 ? "login" : "logins"} from ${BROWSER_NAMES[source]}.`,
         alreadyHere > 0 ? `${alreadyHere} already here.` : "",
         unusable > 0 ? `${unusable} cannot be imported (no password, or too long).` : "",
       ]
@@ -243,8 +255,7 @@ export const en = {
         .join(" "),
     deleteFile: "The CSV file holds every password in plain text. Delete it from your phone after importing.",
     import: "Import",
-    folderName: (browser: "chrome" | "firefox") =>
-      `Imported from ${browser === "chrome" ? "Chrome" : "Firefox"}`,
+    folderName: (source: ImportSource) => `Imported from ${BROWSER_NAMES[source]}`,
     imported: (count: number) => (count === 1 ? "1 login imported" : `${count} logins imported`),
   },
   backup: {

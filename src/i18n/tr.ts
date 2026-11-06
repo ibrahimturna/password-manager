@@ -1,4 +1,16 @@
+import type { ImportSource } from "@/features/backup/browser-import";
+
 import type { Translations } from "./en";
+
+// "from Chrome" in Turkish: the ending follows how each name is pronounced.
+const FROM_BROWSER: Record<ImportSource, string> = {
+  chrome: "Chrome'dan",
+  edge: "Edge'den",
+  brave: "Brave'den",
+  opera: "Opera'dan",
+  vivaldi: "Vivaldi'den",
+  firefox: "Firefox'tan",
+};
 
 // Turkish texts. The `Translations` type makes TypeScript report any missing or extra text.
 export const tr: Translations = {
@@ -230,13 +242,13 @@ export const tr: Translations = {
   },
   browserImport: {
     title: "Tarayıcıdan içe aktar",
-    note: "Şifrelerinizi Chrome veya Firefox'tan CSV dosyası olarak dışa aktarın, sonra buradan seçin. Her giriş yeni bir klasörde kendi şifresi olur ve otomatik doldurma için web sitesine bağlanır.",
+    note: "Şifrelerinizi Chrome, Firefox veya Edge, Brave gibi başka bir Chromium tarayıcısından CSV dosyası olarak dışa aktarın, sonra buradan seçin. Her giriş yeni bir klasörde kendi şifresi olur ve otomatik doldurma için web sitesine bağlanır.",
     chooseFile: "CSV dosyası seç",
     notAnExport: "Bu bir Chrome veya Firefox şifre dışa aktarımı değil.",
     nothingNew: "Bu dosyadaki her şey zaten burada.",
-    summary: (browser: "chrome" | "firefox", count: number, alreadyHere: number, unusable: number) =>
+    summary: (source: ImportSource, count: number, alreadyHere: number, unusable: number) =>
       [
-        `${browser === "chrome" ? "Chrome'dan" : "Firefox'tan"} ${count} yeni giriş.`,
+        `${FROM_BROWSER[source]} ${count} yeni giriş.`,
         alreadyHere > 0 ? `${alreadyHere} tanesi zaten burada.` : "",
         unusable > 0 ? `${unusable} tanesi içe aktarılamaz (şifre yok veya çok uzun).` : "",
       ]
@@ -244,8 +256,7 @@ export const tr: Translations = {
         .join(" "),
     deleteFile: "CSV dosyası tüm şifreleri düz metin olarak içerir. İçe aktardıktan sonra telefonunuzdan silin.",
     import: "İçe aktar",
-    folderName: (browser: "chrome" | "firefox") =>
-      `${browser === "chrome" ? "Chrome'dan" : "Firefox'tan"} aktarılanlar`,
+    folderName: (source: ImportSource) => `${FROM_BROWSER[source]} aktarılanlar`,
     imported: (count: number) => `${count} giriş içe aktarıldı`,
   },
   backup: {
