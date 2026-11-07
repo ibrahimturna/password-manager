@@ -13,7 +13,12 @@ import { useVault } from "@/data/vault-context";
 import { keptState, MASTER_PASSWORD_PASS } from "@/features/lock/kept-state";
 import { useKeptRoute } from "@/features/lock/use-kept-state";
 import { VerifyPasswordDialog } from "@/features/lock/verify-password-dialog";
-import { canUpdate, isUpdateAvailable, UpdateDialog } from "@/features/settings/app-update";
+import {
+  type AvailableUpdate,
+  canUpdate,
+  findUpdate,
+  UpdateDialog,
+} from "@/features/settings/app-update";
 import { useSettings } from "@/features/settings/settings-context";
 import { useTranslation } from "@/i18n/use-translation";
 import { useTheme } from "@/theme/use-theme";
@@ -44,7 +49,7 @@ export default function SettingsScreen() {
   const [updateCheck, setUpdateCheck] = useState<"idle" | "checking" | "upToDate" | "failed">(
     "idle",
   );
-  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const [isAutofillOn, setIsAutofillOn] = useState(isAutofillProvider);
   const [isAutofillMissing, setIsAutofillMissing] = useState(false);
   const [isAskingPassword, setIsAskingPassword] = useState(false);
@@ -97,9 +102,9 @@ export default function SettingsScreen() {
   async function checkForUpdate() {
     setUpdateCheck("checking");
     try {
-      const isAvailable = await isUpdateAvailable();
-      setUpdateCheck(isAvailable ? "idle" : "upToDate");
-      setIsUpdateOpen(isAvailable);
+      const found = await findUpdate();
+      setUpdateCheck(found !== null ? "idle" : "upToDate");
+      setUpdate(found);
     } catch {
       setUpdateCheck("failed");
     }
@@ -223,7 +228,7 @@ export default function SettingsScreen() {
       >
         {updateCheck === "checking" && <ActivityIndicator color={colors.primary} />}
       </SettingsRow>
-      {isUpdateOpen && <UpdateDialog onClose={() => setIsUpdateOpen(false)} />}
+      {update !== null && <UpdateDialog update={update} onClose={() => setUpdate(null)} />}
 
       {isAskingPassword && (
         <VerifyPasswordDialog

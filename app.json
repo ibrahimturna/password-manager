@@ -2,7 +2,7 @@
   "expo": {
     "name": "password-manager",
     "slug": "password-manager",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "passwordmanager",
@@ -24,6 +24,9 @@
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES"
+      ],
+      "permissions": [
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ]
     },
     "web": {

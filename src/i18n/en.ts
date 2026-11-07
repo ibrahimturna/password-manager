@@ -225,9 +225,14 @@ export const en = {
     message: "A new version is ready. The app restarts with it and locks your vault.",
     downloading: "Downloading the update…",
     failed: "The update could not be downloaded. Check your connection.",
+    apkMessage: (version: string, sizeMb: number) =>
+      `Version ${version} adds new features that need a full download (${sizeMb} MB). After downloading, Android asks you to confirm the update. The first time, it also asks you to allow installing apps from this app.`,
+    downloadingApk: (percent: number, doneMb: number, totalMb: number) =>
+      `Downloading… ${percent}% · ${doneMb} of ${totalMb} MB`,
     install: "Update",
     retry: "Try again",
     later: "Later",
+    cancel: "Cancel",
     tapToCheck: "Tap to check for updates",
     checking: "Checking for updates…",
     upToDate: "This is the latest version",

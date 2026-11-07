@@ -1,0 +1,46 @@
+# Builds a new APK and publishes it as a GitHub release, where the app finds it and offers to
+# install it. Run it from the Actions tab whenever native code changed (Kotlin, native packages,
+# app.json). JavaScript-only changes do not need it: update.yml sends those over the air.
+name: Release APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx jest
+      - name: Build on EAS
+        id: build
+        run: |
+          eas build --platform android --profile preview --non-interactive --wait --json > build.json
+          echo "url=$(jq -r '.[0].artifacts.buildUrl' build.json)" >> "$GITHUB_OUTPUT"
+          echo "runtime=$(jq -r '.[0].fingerprint.hash' build.json)" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r '.[0].appVersion' build.json)" >> "$GITHUB_OUTPUT"
+      # The app reads the runtime from the file name, so it must be the build's fingerprint.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME: ${{ steps.build.outputs.runtime }}
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          test -n "$RUNTIME" && test "$RUNTIME" != "null"
+          curl -fL -o "password-manager-$RUNTIME.apk" "${{ steps.build.outputs.url }}"
+          gh release create "v$VERSION-build$GITHUB_RUN_NUMBER" "password-manager-$RUNTIME.apk" \
+            --title "Version $VERSION" \
+            --notes "Installed automatically from the app: Settings, App version."

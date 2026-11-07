@@ -2,7 +2,7 @@
 
 **English** · [Türkçe](#türkçe)
 
-Local-only password manager for Android, version 1.0.4. It needs Android 7.0 or newer. iOS is not tested.
+Local-only password manager for Android, version 1.0.5. It needs Android 7.0 or newer. iOS is not tested.
 
 ## English
 
@@ -84,6 +84,7 @@ Filling, the keyboard offer, shared website matching and saving are tested on a 
 - The app remembers these settings.
 - Settings is a simple list with icons, and language, theme and auto-lock open a small choice dialog.
 - Opening the app asks to install a newer version when one is published. You can say Later, and tap the app version in Settings to check and install at any time. Installing restarts the app and locks the vault.
+- Most updates are small and arrive over the air. When a version adds native code, the app downloads the full APK from the project's GitHub releases, with a progress bar you can cancel, and opens Android's install screen to confirm. Nobody needs to be sent a new APK.
 
 ### Depends on the Android version
 
@@ -99,12 +100,13 @@ Filling, the keyboard offer, shared website matching and saving are tested on a 
 | Hide in recent apps while screenshots are allowed | 13 or newer. Older versions only hide the app while screenshots are blocked. |
 | "Follow the phone" dark theme | 10 or newer, because older versions have no system-wide dark theme |
 | App icon that matches the wallpaper colours | 13 or newer |
+| Installing a full APK update from the app | 8.0 or newer asks once to allow installing apps from this app |
 
 Everything else works the same on all supported versions, as long as the phone has what the feature needs. For example, unlocking with the phone lock needs a screen lock to be set up.
 
 ## Türkçe
 
-Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.4. Android 7.0 veya üzeri gerekir. iOS'ta test edilmedi.
+Yalnızca telefonda çalışan, Android için şifre yöneticisi. Sürüm 1.0.5. Android 7.0 veya üzeri gerekir. iOS'ta test edilmedi.
 
 ### Klasörler
 
@@ -184,6 +186,7 @@ Doldurma, klavye üstü öneri, ortak web sitesi eşleştirme ve kaydetme birço
 - Uygulama bu ayarları hatırlar.
 - Ayarlar, simgeli sade bir listedir; dil, tema ve otomatik kilit küçük bir seçim penceresi açar.
 - Yeni bir sürüm yayımlandığında uygulama açılırken yüklemek isteyip istemediğinizi sorar. Sonra diyebilir, istediğiniz zaman Ayarlar'daki uygulama sürümüne dokunarak denetleyip yükleyebilirsiniz. Yüklemek uygulamayı yeniden başlatır ve kasayı kilitler.
+- Güncellemelerin çoğu küçüktür ve internet üzerinden gelir. Bir sürüm yerel kod eklediğinde uygulama tam APK'yı projenin GitHub sürümlerinden, iptal edebileceğiniz bir ilerleme çubuğuyla indirir ve onay için Android'in yükleme ekranını açar. Kimseye yeni APK göndermek gerekmez.
 
 ### Android sürümüne bağlı özellikler
 
@@ -199,5 +202,6 @@ Doldurma, klavye üstü öneri, ortak web sitesi eşleştirme ve kaydetme birço
 | Ekran görüntülerine izin verilirken son kullanılanlarda gizleme | 13 veya üzeri. Eski sürümlerde uygulama yalnızca ekran görüntüleri engelliyken gizlenir. |
 | "Telefonu takip et" koyu tema | 10 veya üzeri, çünkü eski sürümlerde sistem genelinde koyu tema yoktur |
 | Duvar kağıdı renklerine uyan uygulama simgesi | 13 veya üzeri |
+| Uygulamadan tam APK güncellemesi yükleme | 8.0 veya üzeri bu uygulamadan uygulama yüklemeye bir kez izin ister |
 
 Diğer her şey, telefonda gerekli donanım veya ayar olduğu sürece desteklenen tüm sürümlerde aynı çalışır. Örneğin telefon kilidiyle açmak için bir ekran kilidi kurulmuş olmalıdır.

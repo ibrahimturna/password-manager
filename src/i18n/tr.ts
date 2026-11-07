@@ -226,9 +226,14 @@ export const tr: Translations = {
     message: "Yeni bir sürüm hazır. Uygulama bu sürümle yeniden başlar ve kasanızı kilitler.",
     downloading: "Güncelleme indiriliyor…",
     failed: "Güncelleme indirilemedi. Bağlantınızı kontrol edin.",
+    apkMessage: (version: string, sizeMb: number) =>
+      `${version} sürümü tam indirme gerektiren yeni özellikler içeriyor (${sizeMb} MB). İndirdikten sonra Android güncellemeyi onaylamanızı ister. İlk seferde bu uygulamadan uygulama yüklemeye izin vermenizi de ister.`,
+    downloadingApk: (percent: number, doneMb: number, totalMb: number) =>
+      `İndiriliyor… %${percent} · ${doneMb} / ${totalMb} MB`,
     install: "Güncelle",
     retry: "Tekrar dene",
     later: "Sonra",
+    cancel: "İptal",
     tapToCheck: "Güncellemeleri denetlemek için dokunun",
     checking: "Güncellemeler denetleniyor…",
     upToDate: "Bu en son sürüm",
